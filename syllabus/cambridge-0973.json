@@ -1,0 +1,65 @@
+{
+  "board": "cambridge",
+  "boardName": "Cambridge International",
+  "code": "0973",
+  "subject": "Co-ordinated Sciences (Double Award)",
+  "grading": "9–1 (double award, e.g. 7-7)",
+  "tiers": ["Core", "Extended"],
+  "defaultTier": "Extended",
+  "notes": "Double award covering Biology, Chemistry and Physics. Core questions only lead to the lower grades; Extended (Core + Supplement) is needed for the top grades. Content broadly matches the A*–G version (0654). Topic numbering and the exact Core/Supplement split should be checked against the current syllabus.",
+  "verify": true,
+  "sections": [
+    {
+      "id": "biology",
+      "title": "Biology",
+      "topics": [
+        { "id": "b-characteristics", "title": "Characteristics and classification of living organisms", "subtopics": ["The characteristics of living things", "Classification and the binomial system", "Using dichotomous keys", "Main features of vertebrate and invertebrate groups and plants"], "verify": true },
+        { "id": "b-cells", "title": "Cells", "subtopics": ["Animal, plant and bacterial cell structure", "Functions of cell parts", "Specialised cells, tissues, organs and systems", "Magnification calculations"] },
+        { "id": "b-movement", "title": "Movement into and out of cells", "subtopics": ["Diffusion", "Osmosis in plant and animal tissues", "Active transport"], "extended": ["Water potential explanations of osmosis", "Turgor, plasmolysis and flaccidity"], "verify": true },
+        { "id": "b-molecules", "title": "Biological molecules", "subtopics": ["Carbohydrates, fats and proteins: elements and building blocks", "Food tests (iodine, Benedict's, biuret, ethanol emulsion)"] },
+        { "id": "b-enzymes", "title": "Enzymes", "subtopics": ["Enzymes as biological catalysts", "Effect of temperature and pH"], "extended": ["Active site, enzyme–substrate complex and specificity", "Denaturation explained in terms of shape"] },
+        { "id": "b-plant-nutrition", "title": "Plant nutrition", "subtopics": ["Photosynthesis word and symbol equations", "Leaf structure", "Factors affecting the rate of photosynthesis", "Mineral requirements (nitrate, magnesium)"], "extended": ["Limiting factors"] },
+        { "id": "b-human-nutrition", "title": "Human nutrition", "subtopics": ["Balanced diet", "The digestive system", "Physical and chemical digestion", "Absorption in the small intestine"], "verify": true },
+        { "id": "b-plant-transport", "title": "Transport in plants", "subtopics": ["Xylem and phloem", "Water uptake and transpiration", "Factors affecting transpiration"], "extended": ["Translocation: sources and sinks"], "verify": true },
+        { "id": "b-animal-transport", "title": "Transport in animals", "subtopics": ["The double circulation", "Structure of the heart", "Blood vessels", "Components of blood", "Coronary heart disease"] },
+        { "id": "b-disease", "title": "Diseases and immunity", "subtopics": ["Pathogens and transmission", "Body defences", "Antibodies and vaccination"], "extended": ["Active and passive immunity", "Memory cells"], "verify": true },
+        { "id": "b-gas-exchange", "title": "Gas exchange in humans", "subtopics": ["Features of gas exchange surfaces", "Breathing and the effect of exercise", "Composition of inspired and expired air"] },
+        { "id": "b-respiration", "title": "Respiration", "subtopics": ["Aerobic respiration", "Anaerobic respiration in humans and yeast"], "extended": ["Oxygen debt"] },
+        { "id": "b-coordination", "title": "Coordination and response", "subtopics": ["The nervous system and reflex arcs", "Hormones (adrenaline, insulin, glucagon)", "Homeostasis basics", "Tropisms in plants"], "verify": true },
+        { "id": "b-reproduction", "title": "Reproduction", "subtopics": ["Asexual and sexual reproduction", "Sexual reproduction in flowering plants", "Human reproductive systems and fertilisation", "Sexually transmitted infections"], "verify": true },
+        { "id": "b-inheritance", "title": "Inheritance and variation", "subtopics": ["Chromosomes, genes and DNA", "Monohybrid crosses and Punnett squares", "Variation and mutation", "Natural and artificial selection"], "verify": true },
+        { "id": "b-ecology", "title": "Organisms and their environment", "subtopics": ["Food chains and food webs", "Energy flow and pyramids", "The carbon cycle", "Human impacts on ecosystems"], "verify": true }
+      ]
+    },
+    {
+      "id": "chemistry",
+      "title": "Chemistry",
+      "topics": [
+        { "id": "c-states", "title": "States of matter", "subtopics": ["Solids, liquids and gases (particle model)", "Changes of state", "Diffusion"] },
+        { "id": "c-atoms", "title": "Atoms, elements and compounds", "subtopics": ["Atomic structure and isotopes", "Electron configuration", "Ionic bonding", "Covalent bonding", "Giant covalent structures (diamond, graphite)"], "extended": ["Metallic bonding", "Silicon(IV) oxide structure"], "verify": true },
+        { "id": "c-stoichiometry", "title": "Stoichiometry", "subtopics": ["Formulae and balanced equations", "Relative formula mass"], "extended": ["The mole and molar gas volume", "Reacting mass and concentration calculations", "Percentage yield and purity", "Empirical and molecular formulae"] },
+        { "id": "c-electrochemistry", "title": "Electrochemistry", "subtopics": ["Electrolysis of molten and aqueous compounds", "Products at the electrodes", "Electroplating", "Hydrogen fuel cells"], "extended": ["Ionic half-equations at the electrodes"], "verify": true },
+        { "id": "c-energetics", "title": "Chemical energetics", "subtopics": ["Exothermic and endothermic reactions", "Reaction pathway diagrams"], "extended": ["Bond breaking and making; bond energy calculations"] },
+        { "id": "c-reactions", "title": "Chemical reactions", "subtopics": ["Physical and chemical change", "Rates of reaction and factors affecting them", "Reversible reactions", "Oxidation and reduction (oxygen gain/loss)"], "extended": ["Collision theory explanations", "Redox in terms of electron transfer and oxidation numbers"], "verify": true },
+        { "id": "c-acids", "title": "Acids, bases and salts", "subtopics": ["Properties of acids and bases; pH and indicators", "Neutralisation", "Types of oxides", "Preparing salts"], "extended": ["Acids as proton donors; strong and weak acids"], "verify": true },
+        { "id": "c-periodic-table", "title": "The Periodic Table", "subtopics": ["Arrangement of elements", "Group I properties and trends", "Group VII properties and displacement", "Transition elements", "Noble gases"] },
+        { "id": "c-metals", "title": "Metals", "subtopics": ["Properties and uses of metals and alloys", "The reactivity series", "Extraction of iron and aluminium", "Corrosion and rust prevention"], "verify": true },
+        { "id": "c-environment", "title": "Chemistry of the environment", "subtopics": ["Water purity and treatment", "Fertilisers", "Air quality and pollutants", "Climate change and greenhouse gases"], "verify": true },
+        { "id": "c-organic", "title": "Organic chemistry", "subtopics": ["Fuels and fractional distillation of petroleum", "Alkanes and alkenes", "Cracking", "Alcohols", "Polymers (addition polymerisation)"], "extended": ["Structural isomers", "Condensation polymers"], "verify": true },
+        { "id": "c-analysis", "title": "Experimental techniques and chemical analysis", "subtopics": ["Measurement apparatus", "Separation and purification (filtration, distillation, chromatography)", "Tests for ions and gases", "Acid–base titrations"], "extended": ["Rf values"], "verify": true }
+      ]
+    },
+    {
+      "id": "physics",
+      "title": "Physics",
+      "topics": [
+        { "id": "p-motion", "title": "Motion, forces and energy", "subtopics": ["Length, time and measurement", "Speed, velocity and acceleration; motion graphs", "Mass, weight and density", "Forces, resultant force and Newton's laws", "Moments", "Energy stores, transfers and conservation", "Work and power", "Energy resources", "Pressure"], "extended": ["Momentum and impulse", "Efficiency calculations", "Pressure in liquids (Δp = ρgΔh)", "Centripetal force (qualitative)"], "verify": true },
+        { "id": "p-thermal", "title": "Thermal physics", "subtopics": ["Kinetic particle model", "Thermal expansion", "Specific heat capacity", "Melting, boiling and evaporation", "Conduction, convection and radiation"], "extended": ["Gas pressure and volume (pV constant)", "Specific heat capacity calculations"], "verify": true },
+        { "id": "p-waves", "title": "Waves", "subtopics": ["Wave properties and v = fλ", "Reflection and refraction of light", "Lenses", "The electromagnetic spectrum", "Sound"], "extended": ["Refractive index and critical angle", "Diffraction"], "verify": true },
+        { "id": "p-electricity", "title": "Electricity and magnetism", "subtopics": ["Magnetism", "Charge, current and potential difference", "Resistance and V = IR", "Series and parallel circuits", "Electrical power and safety", "Electromagnetic induction", "Motors and transformers"], "extended": ["Charge Q = It", "Potential dividers", "Transformer equations and power transmission"], "verify": true },
+        { "id": "p-nuclear", "title": "Nuclear physics", "subtopics": ["The nuclear atom and isotopes", "Alpha, beta and gamma radiation", "Background radiation", "Half-life", "Safety precautions"], "extended": ["Nuclear equations", "Fission and fusion"], "verify": true },
+        { "id": "p-space", "title": "Space physics", "subtopics": ["The Earth, Moon and Sun", "The Solar System", "Stars and the Universe"], "verify": true }
+      ]
+    }
+  ]
+}

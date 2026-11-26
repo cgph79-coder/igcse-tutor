@@ -1,0 +1,194 @@
+{
+  "board": "cambridge",
+  "boardName": "Cambridge International",
+  "code": "0606",
+  "subject": "Additional Mathematics",
+  "grading": "A*–E",
+  "gradingVerify": true,
+  "tiers": null,
+  "defaultTier": null,
+  "notes": "Single tier. Builds on IGCSE Mathematics (Extended). Answers must show full working; give exact answers (surds, fractions, multiples of π) where asked, otherwise 3 significant figures and angles in degrees to 1 decimal place.",
+  "sections": [
+    {
+      "id": "algebra",
+      "title": "Algebra and functions",
+      "topics": [
+        {
+          "id": "functions",
+          "title": "Functions",
+          "subtopics": [
+            "Function notation, domain and range",
+            "One-one and many-one functions",
+            "Composite functions",
+            "Inverse functions and their graphs (reflection in y = x)",
+            "The modulus function and graphs of y = |f(x)|"
+          ]
+        },
+        {
+          "id": "quadratics",
+          "title": "Quadratic functions",
+          "subtopics": [
+            "Completing the square; maximum or minimum point",
+            "Using the discriminant: number of roots, tangency and intersection of a line and a curve",
+            "Solving quadratic equations and quadratic inequalities",
+            "Sketching quadratic graphs"
+          ]
+        },
+        {
+          "id": "polynomials",
+          "title": "Factors of polynomials",
+          "subtopics": [
+            "The factor theorem",
+            "The remainder theorem",
+            "Factorising and solving cubic equations"
+          ]
+        },
+        {
+          "id": "equations-graphs",
+          "title": "Equations, inequalities and graphs",
+          "subtopics": [
+            "Solving modulus equations and inequalities",
+            "Sketching cubic graphs and their modulus",
+            "Cubic inequalities",
+            "Equations reducible to quadratics (e.g. in x², √x, eˣ)"
+          ]
+        },
+        {
+          "id": "simultaneous",
+          "title": "Simultaneous equations",
+          "subtopics": [
+            "Simultaneous equations with one linear and one non-linear equation"
+          ]
+        },
+        {
+          "id": "logs-exponentials",
+          "title": "Logarithmic and exponential functions",
+          "subtopics": [
+            "Laws of logarithms; change of base",
+            "Natural logarithms and e",
+            "Solving equations of the form aˣ = b",
+            "Graphs of exponential and logarithmic functions"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "geometry",
+      "title": "Geometry and trigonometry",
+      "topics": [
+        {
+          "id": "straight-lines",
+          "title": "Straight-line graphs",
+          "subtopics": [
+            "Gradient, length and mid-point of a line segment",
+            "Parallel and perpendicular lines",
+            "Converting non-linear relationships to straight-line form (e.g. y = axⁿ, y = Abˣ) using logarithms",
+            "Areas of shapes from coordinates"
+          ]
+        },
+        {
+          "id": "circles",
+          "title": "Coordinate geometry of the circle",
+          "subtopics": [
+            "Equation of a circle in centre–radius and expanded forms",
+            "Tangents and normals to circles",
+            "Intersection of a line and a circle, and of two circles"
+          ]
+        },
+        {
+          "id": "circular-measure",
+          "title": "Circular measure",
+          "subtopics": [
+            "Radians and converting to and from degrees",
+            "Arc length s = rθ",
+            "Sector area ½r²θ",
+            "Problems combining arcs, sectors, triangles and segments"
+          ]
+        },
+        {
+          "id": "trigonometry",
+          "title": "Trigonometry",
+          "subtopics": [
+            "Sine, cosine and tangent of any angle; exact values",
+            "Graphs of sin, cos and tan, including amplitude, period and modulus",
+            "Secant, cosecant and cotangent",
+            "Identities: tan θ = sin θ / cos θ, sin²θ + cos²θ = 1 and related forms",
+            "Solving trigonometric equations in a given interval",
+            "Proving identities"
+          ]
+        },
+        {
+          "id": "vectors",
+          "title": "Vectors in two dimensions",
+          "subtopics": [
+            "Vector notation, column vectors and i, j components",
+            "Magnitude and unit vectors",
+            "Position vectors and geometric problems",
+            "Velocity as a vector; constant-velocity problems"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "counting-series",
+      "title": "Counting and series",
+      "topics": [
+        {
+          "id": "perms-combs",
+          "title": "Permutations and combinations",
+          "subtopics": [
+            "Factorial notation",
+            "Arrangements (permutations) with and without restrictions",
+            "Selections (combinations)",
+            "Telling when order matters"
+          ]
+        },
+        {
+          "id": "series",
+          "title": "Series",
+          "subtopics": [
+            "Binomial expansion of (a + b)ⁿ for positive integer n",
+            "Finding a particular term or coefficient",
+            "Arithmetic progressions: nth term and sum",
+            "Geometric progressions: nth term, sum and sum to infinity"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "calculus",
+      "title": "Calculus",
+      "topics": [
+        {
+          "id": "differentiation",
+          "title": "Differentiation",
+          "subtopics": [
+            "Derivatives of xⁿ, eˣ, ln x, sin x, cos x, tan x",
+            "Chain, product and quotient rules",
+            "Gradients, tangents and normals",
+            "Stationary points and their nature; second derivative",
+            "Connected rates of change and small increments"
+          ]
+        },
+        {
+          "id": "integration",
+          "title": "Integration",
+          "subtopics": [
+            "Integration as the reverse of differentiation",
+            "Integrals of xⁿ, eᵃˣ⁺ᵇ, 1/(ax + b), sin and cos of (ax + b)",
+            "Definite integrals",
+            "Area under a curve and between a line and a curve"
+          ]
+        },
+        {
+          "id": "kinematics",
+          "title": "Kinematics",
+          "subtopics": [
+            "Displacement, velocity and acceleration using calculus",
+            "Particles moving in a straight line; when a particle is at rest"
+          ]
+        }
+      ]
+    }
+  ]
+}

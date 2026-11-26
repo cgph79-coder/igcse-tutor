@@ -1,0 +1,34 @@
+{
+  "board": "cambridge",
+  "boardName": "Cambridge International",
+  "code": "0984",
+  "subject": "Computer Science",
+  "grading": "9–1",
+  "tiers": null,
+  "defaultTier": null,
+  "notes": "Single tier. Paper 1 covers computer systems (topics 1–6); Paper 2 covers algorithms, programming and logic (topics 7–10). Content matches the A*–G version (0478). Programming answers should use Cambridge-style pseudocode unless a language is requested; Python, Visual Basic and Java are the accepted high-level languages.",
+  "sections": [
+    {
+      "id": "systems",
+      "title": "Computer systems (Paper 1)",
+      "topics": [
+        { "id": "data-representation", "title": "Data representation", "subtopics": ["Binary, denary and hexadecimal conversions", "Uses of hexadecimal", "Binary addition and overflow", "Logical binary shifts", "Two's complement (8-bit)", "Character sets: ASCII and Unicode", "Representing sound and images (sample rate, resolution, colour depth)", "File size calculations and units (KiB, MiB …)", "Lossy and lossless compression"] },
+        { "id": "data-transmission", "title": "Data transmission", "subtopics": ["Packets and packet switching", "Serial and parallel; simplex, half-duplex and full-duplex", "USB", "Error detection: parity, checksums, echo checks, check digits, ARQ", "Symmetric and asymmetric encryption"] },
+        { "id": "hardware", "title": "Hardware", "subtopics": ["CPU and von Neumann architecture; registers and buses", "The fetch–decode–execute cycle", "Cores, cache and clock speed", "Instruction sets and embedded systems", "Input and output devices; sensors", "Primary and secondary storage; virtual memory; cloud storage", "Network hardware: NIC, MAC and IP addresses, routers"] },
+        { "id": "software", "title": "Software", "subtopics": ["System and application software", "Operating system functions", "Interrupts", "High-level and low-level languages", "Assemblers, compilers and interpreters", "Features of an IDE"] },
+        { "id": "internet", "title": "The internet and its uses", "subtopics": ["Internet vs World Wide Web", "URLs, HTTP/HTTPS, browsers and DNS", "Cookies", "Digital currency and blockchain", "Cyber security threats (malware, phishing, pharming, DDoS, brute force, social engineering…)", "Security solutions (firewalls, proxies, SSL/TLS, two-step verification, anti-malware…)"] },
+        { "id": "emerging", "title": "Automated and emerging technologies", "subtopics": ["Automated systems: sensors, microprocessors and actuators", "Robotics", "Artificial intelligence and machine learning; expert systems"] }
+      ]
+    },
+    {
+      "id": "programming",
+      "title": "Algorithms, programming and logic (Paper 2)",
+      "topics": [
+        { "id": "algorithms", "title": "Algorithm design and problem-solving", "subtopics": ["Program development life cycle", "Decomposition and structure diagrams", "Flowcharts and pseudocode", "Standard methods: linear search, bubble sort, totalling, counting, max/min/average", "Validation and verification", "Test data: normal, abnormal, extreme and boundary", "Trace tables", "Finding and correcting errors in algorithms"] },
+        { "id": "programming-concepts", "title": "Programming", "subtopics": ["Variables, constants and data types", "Input and output", "Sequence, selection (IF, CASE) and iteration (FOR, WHILE, REPEAT)", "String handling", "Arithmetic, logical and Boolean operators", "Procedures, functions, parameters; local and global variables", "Library routines (MOD, DIV, ROUND, RANDOM)", "One- and two-dimensional arrays", "File handling", "Writing maintainable programs"] },
+        { "id": "databases", "title": "Databases", "subtopics": ["Single-table databases: fields, records, data types", "Primary keys", "SQL: SELECT, FROM, WHERE, ORDER BY, SUM, COUNT"] },
+        { "id": "boolean-logic", "title": "Boolean logic", "subtopics": ["Logic gates: NOT, AND, OR, NAND, NOR, XOR", "Logic circuits from problem statements and expressions", "Truth tables", "Logic expressions"] }
+      ]
+    }
+  ]
+}

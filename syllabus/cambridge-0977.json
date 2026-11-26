@@ -1,0 +1,61 @@
+{
+  "board": "cambridge",
+  "boardName": "Cambridge International",
+  "code": "0977",
+  "subject": "History",
+  "grading": "9–1",
+  "tiers": null,
+  "defaultTier": null,
+  "notes": "Option B core content: the 20th century, international relations since 1919. Depth studies chosen: Germany 1918–45, Russia 1905–41, the USA 1919–41. Content matches the A*–G version (0470). Answers are marked with level-based mark schemes: credit goes to explained, well-supported points and, in 'how far' questions, a balanced argument with a justified judgement.",
+  "sections": [
+    {
+      "id": "interwar",
+      "title": "Core: the inter-war years, 1919–39",
+      "topics": [
+        { "id": "peace-treaties", "title": "Were the peace treaties of 1919–23 fair?", "subtopics": ["Aims of the Big Three (Clemenceau, Lloyd George, Wilson)", "Terms of the Treaty of Versailles", "German reactions and the impact on Germany to 1923", "The other treaties (Saint-Germain, Trianon, Neuilly, Sèvres/Lausanne)", "Could the treaties be justified at the time?"] },
+        { "id": "league", "title": "To what extent was the League of Nations a success?", "subtopics": ["Aims, structure and membership", "Successes in the 1920s (e.g. Åland Islands, Bulgaria, humanitarian work)", "Failures in the 1920s (e.g. Vilna, Corfu)", "Effects of the Depression", "The Manchurian and Abyssinian crises", "Why the League failed"] },
+        { "id": "collapse-1939", "title": "Why had international peace collapsed by 1939?", "subtopics": ["Hitler's foreign policy aims", "Rearmament, the Saar and the Rhineland", "Anschluss with Austria", "The Sudetenland and the Munich Agreement", "Appeasement: arguments for and against", "The Nazi–Soviet Pact and the invasion of Poland"] }
+      ]
+    },
+    {
+      "id": "cold-war",
+      "title": "Core: the Cold War, 1945–c.1989",
+      "topics": [
+        { "id": "cold-war-blame", "title": "Who was to blame for the Cold War?", "subtopics": ["Yalta and Potsdam conferences", "Soviet expansion into Eastern Europe", "The Truman Doctrine and Marshall Plan", "The Berlin Blockade and Airlift", "Interpretations of responsibility"] },
+        { "id": "containment", "title": "How effectively did the USA contain the spread of communism?", "subtopics": ["Korea, 1950–53", "The Cuban Missile Crisis, 1962", "Involvement in Vietnam and its outcome"] },
+        { "id": "eastern-europe", "title": "How secure was the USSR's control over Eastern Europe, 1948–c.1989?", "subtopics": ["Hungary, 1956", "The Berlin Wall, 1961", "Czechoslovakia, 1968", "Solidarity in Poland", "Gorbachev and the collapse of Soviet control"] },
+        { "id": "gulf", "title": "Why did events in the Gulf matter, c.1970–2000?", "subtopics": ["Iran under the Shah and the 1979 revolution", "The Iran–Iraq War", "The First Gulf War, 1990–91"], "verify": true }
+      ]
+    },
+    {
+      "id": "germany",
+      "title": "Depth study: Germany, 1918–45",
+      "topics": [
+        { "id": "weimar", "title": "Was the Weimar Republic doomed from the start?", "subtopics": ["Revolution and the Weimar constitution", "Spartacists, Kapp Putsch and the Munich Putsch", "Hyperinflation and the Ruhr, 1923", "Stresemann and recovery", "Weimar culture"] },
+        { "id": "nazi-rise", "title": "Why was Hitler able to dominate Germany by 1934?", "subtopics": ["Nazi ideas and early support", "Effects of the Depression", "Political manoeuvring of 1932–33", "The Reichstag Fire and Enabling Act", "The Night of the Long Knives and Hindenburg's death"] },
+        { "id": "nazi-control", "title": "How effectively did the Nazis control Germany, 1933–45?", "subtopics": ["The police state: SS, Gestapo, courts and camps", "Propaganda and censorship", "Churches and opposition", "Persecution of Jews and other groups"] },
+        { "id": "nazi-life", "title": "What was it like to live in Nazi Germany?", "subtopics": ["Young people and education", "Women and the family", "Work, the economy and living standards", "The impact of the Second World War on civilians"] }
+      ]
+    },
+    {
+      "id": "russia",
+      "title": "Depth study: Russia, 1905–41",
+      "topics": [
+        { "id": "tsarism", "title": "Why did the Tsarist regime collapse in 1917?", "subtopics": ["Nicholas II and autocracy", "The 1905 Revolution and its consequences", "Stolypin and the Dumas", "The impact of the First World War", "The February Revolution"] },
+        { "id": "bolsheviks-power", "title": "How did the Bolsheviks gain power, and how did they consolidate it?", "subtopics": ["The Provisional Government's problems", "Lenin and the October Revolution", "The Constituent Assembly and Brest-Litovsk", "The Civil War and War Communism", "The New Economic Policy"] },
+        { "id": "stalin-power", "title": "How did Stalin gain and hold on to power?", "subtopics": ["The power struggle after Lenin's death", "Purges and show trials", "The cult of personality and propaganda"] },
+        { "id": "stalin-impact", "title": "What was the impact of Stalin's economic policies?", "subtopics": ["Collectivisation and famine", "The Five-Year Plans", "Life for workers, women and national minorities"] }
+      ]
+    },
+    {
+      "id": "usa",
+      "title": "Depth study: the USA, 1919–41",
+      "topics": [
+        { "id": "boom", "title": "How far did the US economy boom in the 1920s?", "subtopics": ["Causes of the boom: mass production, credit, advertising, Republican policies", "Who did not share in the boom (farmers, older industries, Black Americans)"] },
+        { "id": "roaring-twenties", "title": "How far did US society change in the 1920s?", "subtopics": ["Entertainment, jazz and the changing role of women", "Prohibition and organised crime", "Immigration restriction, the Red Scare and Sacco and Vanzetti", "Racism, the Ku Klux Klan and the Scopes trial"] },
+        { "id": "crash", "title": "What were the causes and consequences of the Wall Street Crash?", "subtopics": ["Speculation and weaknesses in the economy", "The Crash of 1929", "The Depression and Hoover's response", "The 1932 election"] },
+        { "id": "new-deal", "title": "How successful was the New Deal?", "subtopics": ["Roosevelt and the Hundred Days; alphabet agencies", "The Second New Deal", "Opposition to the New Deal", "Successes and limitations by 1941"] }
+      ]
+    }
+  ]
+}

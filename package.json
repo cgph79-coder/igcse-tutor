@@ -10,7 +10,7 @@
     "dev:web": "npm run dev -w web",
     "dev:worker": "npm run dev -w worker",
     "build:web": "npm run build -w web",
-    "test": "npm test -w worker",
+    "test": "npm test -w worker && npm test -w web",
     "typecheck": "npm run typecheck -w worker && npm run typecheck -w web",
     "deploy:worker": "npm run deploy -w worker"
   },

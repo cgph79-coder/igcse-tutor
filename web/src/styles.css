@@ -164,3 +164,8 @@ form.composer textarea {
   background: var(--accent); color: var(--accent-text); font-weight: 600; font-size: 14px;
 }
 .thinking-note { color: var(--muted); font-size: 14px; }
+.update-bar {
+  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px;
+  background: var(--accent-soft); color: var(--text); font-size: 14px;
+}
+.update-bar button { border: none; border-radius: 999px; padding: 4px 12px; background: var(--accent); color: var(--accent-text); font-weight: 600; }

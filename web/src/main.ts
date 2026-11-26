@@ -36,6 +36,39 @@ const state = {
   attachments: [] as Attachment[],
 };
 
+// The open conversation is kept on this device so a reload or refresh doesn't lose it.
+// Photos are not kept (too large, and more private this way).
+const CONVO_KEY = "conversation";
+const CONVO_MAX_AGE = 24 * 60 * 60 * 1000;
+
+function saveConversation() {
+  if (!state.messages.length) return prefs.set(CONVO_KEY, null);
+  const messages = state.messages.map((m) =>
+    m.images?.length ? { role: m.role, content: `${m.content}\n📷 ${m.images.length} photo(s) — not kept after reload` } : m,
+  );
+  try {
+    prefs.set(CONVO_KEY, JSON.stringify({ savedAt: Date.now(), sessionId: state.sessionId, recorded: state.recorded, messages }));
+  } catch {
+    /* storage full — conversation just won't survive a reload */
+  }
+}
+
+function restoreConversation() {
+  try {
+    const raw = prefs.get(CONVO_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw) as { savedAt: number; sessionId: string; recorded: boolean; messages: ChatMessage[] };
+    if (Date.now() - saved.savedAt > CONVO_MAX_AGE || !Array.isArray(saved.messages)) return prefs.set(CONVO_KEY, null);
+    if (!/^[A-Za-z0-9-]{8,64}$/.test(saved.sessionId)) return prefs.set(CONVO_KEY, null);
+    state.sessionId = saved.sessionId as typeof state.sessionId;
+    state.recorded = saved.recorded;
+    state.messages = saved.messages;
+    state.setupOpen = state.messages.length === 0;
+  } catch {
+    prefs.set(CONVO_KEY, null);
+  }
+}
+
 function newSessionId() {
   return crypto.randomUUID();
 }
@@ -76,6 +109,7 @@ function resetConversation() {
   state.sessionId = newSessionId();
   state.messages = [];
   state.recorded = false;
+  saveConversation();
 }
 
 // ---------------- rendering ----------------
@@ -437,6 +471,7 @@ async function send(text: string, attachments: Attachment[] = []) {
   const content = (text || (images.length ? "Please check my work in the photo." : "")) + fileText;
   const userMsg: ChatMessage = { role: "user", content, ...(images.length ? { images } : {}) };
   state.messages.push(userMsg);
+  saveConversation();
   chatEl.querySelector(".empty")?.remove();
   chatEl.append(messageBubble(userMsg));
   const reply: ChatMessage = { role: "assistant", content: "" };
@@ -481,6 +516,7 @@ async function send(text: string, attachments: Attachment[] = []) {
     bubble.classList.remove("typing");
     fillBubble(bubble, reply);
     state.messages.push(reply);
+    saveConversation();
     if (result.truncated) {
       const btn = el("button", { type: "button", class: "continue-btn" }, "Continue ▸");
       const note = el("div", { class: "msg notice", role: "status" }, "That reply was long, so it stopped early. ", btn);
@@ -502,6 +538,7 @@ async function send(text: string, attachments: Attachment[] = []) {
   } catch (ex) {
     bubble.remove();
     state.messages.pop(); // let him resend
+    saveConversation();
     if (ex instanceof ApiError && ex.status === 401) {
       prefs.set("token", null);
       state.token = null;
@@ -579,5 +616,13 @@ async function renderProgress(panel: HTMLElement) {
   panel.append(clear, logout);
 }
 
+restoreConversation();
 render();
-startUpdateCheck(() => !state.busy && state.attachments.length === 0 && !(textarea?.value ?? "").trim());
+startUpdateCheck(
+  () => !state.busy && state.messages.length === 0 && state.attachments.length === 0 && !(textarea?.value ?? "").trim(),
+  () => {
+    const btn = el("button", { type: "button" }, "Update");
+    btn.addEventListener("click", () => location.reload()); // the conversation is saved, so nothing is lost
+    document.querySelector(".app")?.prepend(el("div", { class: "update-bar", role: "status" }, "A new version is ready. ", btn));
+  },
+);

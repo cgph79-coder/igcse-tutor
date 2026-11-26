@@ -47,6 +47,12 @@ Next: Lane runner, Defend the base, Speed tiles (each a new `StartGame` in `web/
 Limits: phones pause web pages in the background, so the chime and notification fire when he comes back to the app, not exactly on time, unless the tab is still running. A true background alarm would need the app installed as a PWA with push notifications.
 Next (optional): focus time per day in the parent view (needs the Worker to receive daily totals, never message content).
 
+## Installable app (PWA)
+
+**Status (Nov 2026): built.** The site can be added to a phone's home screen without an app store: a web app manifest (`web/public/manifest.webmanifest`), icons (`web/public/icons/`, made from the "IG" mark), iPhone home-screen tags, and a service worker (`web/public/sw.js`). Pages load network-first so new deploys show at once, built files are cached so the app opens offline, `version.json` is never cached, and Worker calls are never touched. Progress shows an "Install the app" card: the browser's install button on Android and desktop, Share → Add to Home Screen steps on iPhone. Timer notifications go through the service worker, which installed iPhone apps require (iOS 16.4+).
+Note: on iPhone the installed app has its own storage, so he logs in again and progress starts fresh there.
+**Next (optional): timer alarms that are on time in the background.** Web Push: the app subscribes when a focus block starts, and the Worker sends the push at the block's end time (Cloudflare Queues or a Durable Object alarm, with VAPID keys as Worker secrets). This works for installed web apps on iPhone and doesn't need the App Store.
+
 ## 3. Student onboarding: subjects, exam year and syllabus updates
 
 **Goal:** when a student first opens the app, they choose their subjects and exam session (e.g. June 2027), and the app makes sure the matching syllabus versions are in place and stay current.

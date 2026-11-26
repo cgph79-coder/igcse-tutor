@@ -345,3 +345,8 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .pomo-toast-actions { display: flex; gap: 8px; margin-top: 10px; }
 .pomo-toast-actions button { border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: 14px; }
 .pomo-toast-actions button:first-child { background: var(--accent); color: var(--accent-text); }
+
+/* ---- install ---- */
+.install-card { border-color: var(--accent); background: var(--accent-soft); }
+.install-card p { margin: 6px 0 0; }
+.install-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }

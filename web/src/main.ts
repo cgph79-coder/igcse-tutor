@@ -7,6 +7,7 @@ import { LocalProgressStore, prefs, type ProgressStore } from "./storage";
 import { applyTheme, el, initTheme, nextTheme } from "./ui";
 import { startUpdateCheck } from "./update-check";
 import { formatDuration, initPomodoro, timerBar, timerButton } from "./pomodoro";
+import { installCard, registerServiceWorker } from "./install";
 import { ACCEPT, MAX_PHOTOS, onAttachmentWarning, readAttachment, type Attachment } from "./attachments";
 
 type Mode = "learn" | "practise" | "mark" | "quiz";
@@ -621,6 +622,9 @@ async function renderProgress(panel: HTMLElement) {
   const [all, weak, focus] = await Promise.all([store.all(), store.weakest(5), store.focusLog()]);
   panel.replaceChildren();
 
+  const install = installCard();
+  if (install) panel.append(install);
+
   panel.append(el("h2", {}, "Focus time"));
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
@@ -694,6 +698,7 @@ async function renderProgress(panel: HTMLElement) {
   panel.append(clear, logout);
 }
 
+registerServiceWorker();
 restoreConversation();
 initPomodoro({
   store,

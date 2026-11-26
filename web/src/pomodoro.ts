@@ -7,6 +7,7 @@
  */
 import { prefs, type ProgressStore } from "./storage";
 import { el } from "./ui";
+import { isIos, isStandalone, showNotification } from "./install";
 import {
   cleanSettings,
   cleanState,
@@ -97,13 +98,7 @@ function chime(kind: "focusDone" | "breakDone") {
 }
 
 function notify(title: string, body: string) {
-  try {
-    if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
-      new Notification(title, { body, tag: "igcse-tutor-timer" });
-    }
-  } catch {
-    /* some phones only allow notifications from an installed app */
-  }
+  if ("Notification" in window && Notification.permission === "granted" && document.hidden) void showNotification(title, body);
 }
 
 function toast(title: string, body: string, actions: Array<{ label: string; run: () => void }> = []) {
@@ -239,7 +234,12 @@ function checkbox(label: string, value: boolean, onChange: (v: boolean) => void)
 }
 
 function notificationControl(): HTMLElement | null {
-  if (!("Notification" in window)) return null;
+  if (!("Notification" in window)) {
+    // iPhone/iPad only allow web notifications in apps added to the Home Screen.
+    return isIos() && !isStandalone()
+      ? el("p", { class: "meta" }, "For notifications on iPhone, add the app to your Home Screen (see Progress).")
+      : null;
+  }
   if (Notification.permission === "granted") return el("p", { class: "meta" }, "Notifications are on for when the app is in the background.");
   if (Notification.permission === "denied") return el("p", { class: "meta" }, "Notifications are blocked in your browser settings.");
   const b = el("button", { type: "button", class: "icon-btn" }, "Allow notifications");

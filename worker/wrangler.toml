@@ -8,7 +8,7 @@ compatibility_date = "2026-11-01"
 # Create it with `npx wrangler kv namespace create TUTOR_KV` and paste the id below.
 [[kv_namespaces]]
 binding = "TUTOR_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "952b3aed5018401d9e9906d7d313dfcb"
 
 [vars]
 # --- LLM provider (any OpenAI-compatible chat completions API) ---

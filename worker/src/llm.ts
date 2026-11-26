@@ -56,19 +56,20 @@ export async function describeError(res: Response): Promise<string> {
 }
 
 /**
- * Call the model. On OpenRouter, hidden "thinking" is switched off so the whole allowance goes on
- * the visible reply. Some models refuse that setting, so we fall back to capping the thinking
- * (and adding that budget on top), and finally to sending no reasoning setting at all.
+ * Call the model. Many current models always "think" before replying, and that hidden thinking
+ * counts against max_tokens. On OpenRouter we ask for low-effort thinking and add generous
+ * headroom on top of the reply allowance, so the visible reply always has room. You only pay
+ * for tokens actually used. If a provider rejects the reasoning setting, retry without it.
  */
+export const THINKING_HEADROOM = 6000;
+
 export async function callLlm(target: LlmTarget, messages: LlmMessage[], maxTokens: number): Promise<Response> {
   const url = target.baseUrl.replace(/\/+$/, "") + "/chat/completions";
   const isOpenRouter = /openrouter\.ai/.test(target.baseUrl);
-  const thinkBudget = 1024;
   const attempts: Array<{ reasoning?: Record<string, unknown>; max_tokens: number }> = isOpenRouter
     ? [
-        { reasoning: { enabled: false }, max_tokens: maxTokens },
-        { reasoning: { max_tokens: thinkBudget, exclude: true }, max_tokens: maxTokens + thinkBudget },
-        { max_tokens: maxTokens + 2 * thinkBudget },
+        { reasoning: { effort: "low", exclude: true }, max_tokens: maxTokens + THINKING_HEADROOM },
+        { max_tokens: maxTokens + THINKING_HEADROOM },
       ]
     : [{ max_tokens: maxTokens }];
 

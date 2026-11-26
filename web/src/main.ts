@@ -441,6 +441,8 @@ async function send(text: string, attachments: Attachment[] = []) {
   chatEl.append(messageBubble(userMsg));
   const reply: ChatMessage = { role: "assistant", content: "" };
   const bubble = messageBubble(reply, true);
+  // Photo marking can take a while before the first words appear.
+  if (images.length) bubble.append(el("span", { class: "thinking-note" }, "Reading your work — this can take up to a minute…"));
   chatEl.append(bubble);
   chatEl.scrollTop = chatEl.scrollHeight;
 

@@ -58,8 +58,8 @@ describe("photo uploads", () => {
     const sent = JSON.parse(init.body as string);
     expect(sent.model).toBe("vision-model");
     expect(sent.provider).toEqual({ data_collection: "deny" });
-    expect(sent.reasoning).toEqual({ enabled: false });
-    expect(sent.max_tokens).toBe(2000);
+    expect(sent.reasoning).toEqual({ effort: "low", exclude: true });
+    expect(sent.max_tokens).toBe(8000); // 2000 reply + 6000 thinking headroom
     const last = sent.messages[sent.messages.length - 1];
     expect(last.content[0]).toEqual({ type: "text", text: "Mark this" });
     expect(last.content[1]).toEqual({ type: "image_url", image_url: { url: IMG } });
@@ -80,8 +80,8 @@ describe("photo uploads", () => {
       vi.fn(async (_url: string, init: RequestInit) => {
         const b = JSON.parse(init.body as string);
         bodies.push(b);
-        if (b.reasoning?.enabled === false)
-          return new Response(JSON.stringify({ error: { message: "Reasoning is mandatory for this endpoint" } }), { status: 400 });
+        if (b.reasoning)
+          return new Response(JSON.stringify({ error: { message: "reasoning not supported" } }), { status: 400 });
         return new Response(sseBody(["Marked"]), { status: 200 });
       }),
     );
@@ -95,8 +95,8 @@ describe("photo uploads", () => {
     expect(await res.text()).toContain("Marked");
     await settle();
     expect(bodies).toHaveLength(2);
-    expect(bodies[1].reasoning).toEqual({ max_tokens: 1024, exclude: true });
-    expect(bodies[1].max_tokens).toBe(3024);
+    expect(bodies[1].reasoning).toBeUndefined();
+    expect(bodies[1].max_tokens).toBe(8000);
   });
 
   it("reports an empty reply as an error instead of a blank message", async () => {

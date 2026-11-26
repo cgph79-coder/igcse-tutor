@@ -4,61 +4,648 @@
   "code": "0973",
   "subject": "Co-ordinated Sciences (Double Award)",
   "grading": "9–1 (double award, e.g. 7-7)",
-  "tiers": ["Core", "Extended"],
+  "tiers": [
+    "Core",
+    "Extended"
+  ],
   "defaultTier": "Extended",
-  "notes": "Double award covering Biology, Chemistry and Physics. Core questions only lead to the lower grades; Extended (Core + Supplement) is needed for the top grades. Content broadly matches the A*–G version (0654). Topic numbering and the exact Core/Supplement split should be checked against the current syllabus.",
-  "verify": true,
+  "notes": "Syllabus for exams in 2025–2027. Double award covering Biology, Chemistry and Physics. Core entries can achieve at most grade 5-5; Extended (Core + Supplement) is needed for grades 4-4 to 9-9. Uses g = 9.8 N/kg. Removed from this syllabus (don't teach as examinable): evolution, tropisms, sense-organ detail, smoking, teeth, pregnancy/placenta, anaerobic respiration in yeast, nitrogen/fertilisers, sulfur, carbonates.",
   "sections": [
     {
       "id": "biology",
       "title": "Biology",
       "topics": [
-        { "id": "b-characteristics", "title": "Characteristics and classification of living organisms", "subtopics": ["The characteristics of living things", "Classification and the binomial system", "Using dichotomous keys", "Main features of vertebrate and invertebrate groups and plants"], "verify": true },
-        { "id": "b-cells", "title": "Cells", "subtopics": ["Animal, plant and bacterial cell structure", "Functions of cell parts", "Specialised cells, tissues, organs and systems", "Magnification calculations"] },
-        { "id": "b-movement", "title": "Movement into and out of cells", "subtopics": ["Diffusion", "Osmosis in plant and animal tissues", "Active transport"], "extended": ["Water potential explanations of osmosis", "Turgor, plasmolysis and flaccidity"], "verify": true },
-        { "id": "b-molecules", "title": "Biological molecules", "subtopics": ["Carbohydrates, fats and proteins: elements and building blocks", "Food tests (iodine, Benedict's, biuret, ethanol emulsion)"] },
-        { "id": "b-enzymes", "title": "Enzymes", "subtopics": ["Enzymes as biological catalysts", "Effect of temperature and pH"], "extended": ["Active site, enzyme–substrate complex and specificity", "Denaturation explained in terms of shape"] },
-        { "id": "b-plant-nutrition", "title": "Plant nutrition", "subtopics": ["Photosynthesis word and symbol equations", "Leaf structure", "Factors affecting the rate of photosynthesis", "Mineral requirements (nitrate, magnesium)"], "extended": ["Limiting factors"] },
-        { "id": "b-human-nutrition", "title": "Human nutrition", "subtopics": ["Balanced diet", "The digestive system", "Physical and chemical digestion", "Absorption in the small intestine"], "verify": true },
-        { "id": "b-plant-transport", "title": "Transport in plants", "subtopics": ["Xylem and phloem", "Water uptake and transpiration", "Factors affecting transpiration"], "extended": ["Translocation: sources and sinks"], "verify": true },
-        { "id": "b-animal-transport", "title": "Transport in animals", "subtopics": ["The double circulation", "Structure of the heart", "Blood vessels", "Components of blood", "Coronary heart disease"] },
-        { "id": "b-disease", "title": "Diseases and immunity", "subtopics": ["Pathogens and transmission", "Body defences", "Antibodies and vaccination"], "extended": ["Active and passive immunity", "Memory cells"], "verify": true },
-        { "id": "b-gas-exchange", "title": "Gas exchange in humans", "subtopics": ["Features of gas exchange surfaces", "Breathing and the effect of exercise", "Composition of inspired and expired air"] },
-        { "id": "b-respiration", "title": "Respiration", "subtopics": ["Aerobic respiration", "Anaerobic respiration in humans and yeast"], "extended": ["Oxygen debt"] },
-        { "id": "b-coordination", "title": "Coordination and response", "subtopics": ["The nervous system and reflex arcs", "Hormones (adrenaline, insulin, glucagon)", "Homeostasis basics", "Tropisms in plants"], "verify": true },
-        { "id": "b-reproduction", "title": "Reproduction", "subtopics": ["Asexual and sexual reproduction", "Sexual reproduction in flowering plants", "Human reproductive systems and fertilisation", "Sexually transmitted infections"], "verify": true },
-        { "id": "b-inheritance", "title": "Inheritance and variation", "subtopics": ["Chromosomes, genes and DNA", "Monohybrid crosses and Punnett squares", "Variation and mutation", "Natural and artificial selection"], "verify": true },
-        { "id": "b-ecology", "title": "Organisms and their environment", "subtopics": ["Food chains and food webs", "Energy flow and pyramids", "The carbon cycle", "Human impacts on ecosystems"], "verify": true }
+        {
+          "id": "b-characteristics",
+          "title": "Characteristics of living organisms",
+          "subtopics": [
+            "The seven characteristics: movement, respiration, sensitivity, growth, reproduction, excretion, nutrition"
+          ]
+        },
+        {
+          "id": "b-cells",
+          "title": "Cells",
+          "subtopics": [
+            "Plant, animal and bacterial cell structures and their functions",
+            "Identifying cell structures in diagrams and images",
+            "New cells come from division of existing cells",
+            "Specialised cells (ciliated, root hair, palisade, neurones, red blood cells, gametes)",
+            "Cell, tissue, organ, organ system, organism",
+            "Magnification: magnification = image size ÷ actual size, in mm"
+          ],
+          "extended": [
+            "Converting between millimetres and micrometres"
+          ]
+        },
+        {
+          "id": "b-movement",
+          "title": "Movement into and out of cells",
+          "subtopics": [
+            "Diffusion and why it matters to organisms",
+            "Osmosis through partially permeable membranes",
+            "Effects on plant tissue of solutions of different concentrations",
+            "Active transport against a concentration gradient using energy from respiration"
+          ],
+          "extended": [
+            "Factors affecting diffusion: surface area, temperature, concentration gradient, distance",
+            "Osmosis in terms of water potential",
+            "Turgid, turgor pressure, plasmolysis, flaccid",
+            "Importance of active transport, e.g. ion uptake by root hairs"
+          ]
+        },
+        {
+          "id": "b-molecules",
+          "title": "Biological molecules",
+          "subtopics": [
+            "Elements in carbohydrates, fats and proteins",
+            "Large molecules from small ones (starch/glycogen/cellulose, proteins, fats)",
+            "Food tests: iodine, Benedict's, biuret, ethanol emulsion"
+          ]
+        },
+        {
+          "id": "b-enzymes",
+          "title": "Enzymes",
+          "subtopics": [
+            "Enzymes as biological catalysts",
+            "Effect of temperature and pH on enzyme activity (investigating)"
+          ],
+          "extended": [
+            "Active site, enzyme–substrate complex, substrate and product",
+            "Specificity: complementary shape of active site and substrate",
+            "Explaining temperature effects: kinetic energy, collisions, denaturation",
+            "Explaining pH effects: shape of active site and denaturation"
+          ]
+        },
+        {
+          "id": "b-plant-nutrition",
+          "title": "Plant nutrition",
+          "subtopics": [
+            "Photosynthesis and its word equation",
+            "Chlorophyll in chloroplasts",
+            "Investigating the need for chlorophyll, light and carbon dioxide",
+            "Leaf features: large surface area, thin; identifying leaf structures"
+          ],
+          "extended": [
+            "Balanced symbol equation for photosynthesis",
+            "Chlorophyll transfers light energy into chemical energy",
+            "Uses and storage of the carbohydrates made",
+            "Nitrate ions (amino acids) and magnesium ions (chlorophyll)",
+            "Effects of light intensity, CO₂ concentration and temperature (limiting factors)",
+            "Gas exchange in light and dark conditions",
+            "How leaf structures are adapted for photosynthesis"
+          ]
+        },
+        {
+          "id": "b-human-nutrition",
+          "title": "Human nutrition",
+          "subtopics": [
+            "Balanced diet and dietary sources of nutrients",
+            "Causes of scurvy and rickets",
+            "Organs of the digestive system and their functions",
+            "Physical and chemical digestion"
+          ],
+          "extended": [
+            "Functions of amylase, protease and lipase and where they are secreted",
+            "Hydrochloric acid in the stomach",
+            "Bile: neutralising acid and emulsifying fats"
+          ]
+        },
+        {
+          "id": "b-plant-transport",
+          "title": "Transport in plants",
+          "subtopics": [
+            "Functions and positions of xylem and phloem",
+            "Root hair cells and water uptake",
+            "Pathway of water through root, stem and leaf",
+            "Transpiration; effect of temperature and wind speed"
+          ],
+          "extended": [
+            "Explaining effects of temperature, wind speed and humidity on transpiration",
+            "Wilting",
+            "Translocation of sucrose and amino acids; sources and sinks"
+          ]
+        },
+        {
+          "id": "b-animal-transport",
+          "title": "Transport in animals",
+          "subtopics": [
+            "The circulatory system",
+            "Structure of the heart",
+            "Monitoring the heart (ECG, pulse, heart sounds); effect of exercise on heart rate",
+            "Coronary heart disease and how diet and exercise reduce risk",
+            "Structure of arteries, veins and capillaries",
+            "Components of blood and their functions"
+          ],
+          "extended": [
+            "Single circulation of fish and double circulation of mammals; advantages",
+            "How the heart pumps: muscle contraction and valves",
+            "Explaining the effect of exercise on heart rate",
+            "How vessel structure relates to function; main blood vessels",
+            "Lymphocytes and phagocytes",
+            "Blood clotting"
+          ]
+        },
+        {
+          "id": "b-disease",
+          "title": "Diseases and immunity",
+          "subtopics": [
+            "Pathogens and transmissible diseases",
+            "How pathogens are transmitted",
+            "Body defences (skin, hairs, mucus, stomach acid, white blood cells)",
+            "Controlling the spread of disease (food, hygiene, waste, sewage)",
+            "Vaccination as a way to control disease"
+          ],
+          "extended": [
+            "Features of viruses",
+            "Antigens and antibodies with complementary shapes",
+            "Active immunity",
+            "How vaccination works and its role in controlling spread"
+          ]
+        },
+        {
+          "id": "b-gas-exchange",
+          "title": "Gas exchange in humans",
+          "subtopics": [
+            "Parts of the breathing system",
+            "Inspired vs expired air (limewater test)",
+            "Effect of physical activity on rate and depth of breathing"
+          ],
+          "extended": [
+            "Features of gas exchange surfaces",
+            "Explaining differences between inspired and expired air",
+            "Explaining the link between activity and breathing"
+          ]
+        },
+        {
+          "id": "b-respiration",
+          "title": "Respiration",
+          "subtopics": [
+            "Uses of energy in organisms",
+            "Aerobic respiration and its word equation"
+          ],
+          "extended": [
+            "Balanced symbol equation for aerobic respiration",
+            "Anaerobic respiration releases much less energy",
+            "Anaerobic respiration in muscles (lactic acid)",
+            "Oxygen debt and how it is removed"
+          ]
+        },
+        {
+          "id": "b-coordination",
+          "title": "Coordination and response",
+          "subtopics": [
+            "Electrical impulses and the nervous system (CNS and peripheral)",
+            "Sensory, relay and motor neurones",
+            "Reflex arcs and reflex actions",
+            "Sense organs as groups of receptor cells",
+            "Hormones and endocrine glands",
+            "Adrenaline and 'fight or flight'"
+          ],
+          "extended": [
+            "Glucagon from the pancreas",
+            "Homeostasis and negative feedback",
+            "Control of blood glucose by insulin and glucagon",
+            "Skin structures and control of body temperature"
+          ]
+        },
+        {
+          "id": "b-drugs",
+          "title": "Drugs",
+          "subtopics": [
+            "What a drug is",
+            "Antibiotics treat bacterial infections, not viruses",
+            "Antibiotic resistance"
+          ],
+          "extended": [
+            "Limiting the development of resistant bacteria"
+          ]
+        },
+        {
+          "id": "b-reproduction",
+          "title": "Reproduction",
+          "subtopics": [
+            "Asexual and sexual reproduction; what a species is",
+            "Flower structure and functions",
+            "Pollination, fertilisation, insect- vs wind-pollinated flowers",
+            "Conditions for seed germination",
+            "Human reproductive systems",
+            "Fertilisation; roles of testosterone and oestrogen",
+            "The menstrual cycle",
+            "STIs: HIV, AIDS, transmission and control"
+          ],
+          "extended": [
+            "Advantages and disadvantages of asexual and sexual reproduction",
+            "Haploid gametes and diploid zygote",
+            "Anthers and stigmas of wind-pollinated flowers",
+            "Adaptations of sperm and egg cells; comparing gametes"
+          ]
+        },
+        {
+          "id": "b-inheritance",
+          "title": "Inheritance",
+          "subtopics": [
+            "Chromosomes, DNA, genes and alleles",
+            "Inheritance of sex (XX and XY)",
+            "Genotype, phenotype, homozygous, heterozygous",
+            "Dominant and recessive alleles",
+            "Pedigree diagrams",
+            "Monohybrid crosses and Punnett squares"
+          ],
+          "extended": [
+            "Haploid and diploid nuclei",
+            "Mitosis: growth, repair, replacement, asexual reproduction",
+            "Meiosis: reduction division to make gametes"
+          ]
+        },
+        {
+          "id": "b-variation",
+          "title": "Variation and selection",
+          "subtopics": [
+            "Continuous and discontinuous variation",
+            "Mutation as the source of new alleles",
+            "Natural selection",
+            "Selective breeding"
+          ],
+          "extended": [
+            "Antibiotic-resistant bacteria as an example of natural selection"
+          ]
+        },
+        {
+          "id": "b-ecology",
+          "title": "Organisms and their environment",
+          "subtopics": [
+            "The Sun as the energy source; energy flow",
+            "Food chains and food webs",
+            "Producers, consumers, herbivores, carnivores, decomposers",
+            "Human impact on food webs",
+            "The carbon cycle"
+          ],
+          "extended": [
+            "Trophic levels",
+            "Why energy transfer between trophic levels is inefficient",
+            "Why food chains are short",
+            "Why eating crops is more energy-efficient than eating livestock"
+          ]
+        },
+        {
+          "id": "b-human-influences",
+          "title": "Human influences on ecosystems",
+          "subtopics": [
+            "Ecosystems and biodiversity",
+            "Reasons for habitat destruction",
+            "Effects of deforestation",
+            "Why species become endangered or extinct",
+            "Conservation methods"
+          ],
+          "extended": [
+            "Explaining the undesirable effects of deforestation"
+          ]
+        }
       ]
     },
     {
       "id": "chemistry",
       "title": "Chemistry",
       "topics": [
-        { "id": "c-states", "title": "States of matter", "subtopics": ["Solids, liquids and gases (particle model)", "Changes of state", "Diffusion"] },
-        { "id": "c-atoms", "title": "Atoms, elements and compounds", "subtopics": ["Atomic structure and isotopes", "Electron configuration", "Ionic bonding", "Covalent bonding", "Giant covalent structures (diamond, graphite)"], "extended": ["Metallic bonding", "Silicon(IV) oxide structure"], "verify": true },
-        { "id": "c-stoichiometry", "title": "Stoichiometry", "subtopics": ["Formulae and balanced equations", "Relative formula mass"], "extended": ["The mole and molar gas volume", "Reacting mass and concentration calculations", "Percentage yield and purity", "Empirical and molecular formulae"] },
-        { "id": "c-electrochemistry", "title": "Electrochemistry", "subtopics": ["Electrolysis of molten and aqueous compounds", "Products at the electrodes", "Electroplating", "Hydrogen fuel cells"], "extended": ["Ionic half-equations at the electrodes"], "verify": true },
-        { "id": "c-energetics", "title": "Chemical energetics", "subtopics": ["Exothermic and endothermic reactions", "Reaction pathway diagrams"], "extended": ["Bond breaking and making; bond energy calculations"] },
-        { "id": "c-reactions", "title": "Chemical reactions", "subtopics": ["Physical and chemical change", "Rates of reaction and factors affecting them", "Reversible reactions", "Oxidation and reduction (oxygen gain/loss)"], "extended": ["Collision theory explanations", "Redox in terms of electron transfer and oxidation numbers"], "verify": true },
-        { "id": "c-acids", "title": "Acids, bases and salts", "subtopics": ["Properties of acids and bases; pH and indicators", "Neutralisation", "Types of oxides", "Preparing salts"], "extended": ["Acids as proton donors; strong and weak acids"], "verify": true },
-        { "id": "c-periodic-table", "title": "The Periodic Table", "subtopics": ["Arrangement of elements", "Group I properties and trends", "Group VII properties and displacement", "Transition elements", "Noble gases"] },
-        { "id": "c-metals", "title": "Metals", "subtopics": ["Properties and uses of metals and alloys", "The reactivity series", "Extraction of iron and aluminium", "Corrosion and rust prevention"], "verify": true },
-        { "id": "c-environment", "title": "Chemistry of the environment", "subtopics": ["Water purity and treatment", "Fertilisers", "Air quality and pollutants", "Climate change and greenhouse gases"], "verify": true },
-        { "id": "c-organic", "title": "Organic chemistry", "subtopics": ["Fuels and fractional distillation of petroleum", "Alkanes and alkenes", "Cracking", "Alcohols", "Polymers (addition polymerisation)"], "extended": ["Structural isomers", "Condensation polymers"], "verify": true },
-        { "id": "c-analysis", "title": "Experimental techniques and chemical analysis", "subtopics": ["Measurement apparatus", "Separation and purification (filtration, distillation, chromatography)", "Tests for ions and gases", "Acid–base titrations"], "extended": ["Rf values"], "verify": true }
+        {
+          "id": "c-states",
+          "title": "States of matter",
+          "subtopics": [
+            "Properties and particle structure of solids, liquids and gases",
+            "Changes of state",
+            "Effect of temperature and pressure on gas volume",
+            "Diffusion and kinetic particle theory"
+          ],
+          "extended": [
+            "Explaining changes of state, heating and cooling curves with kinetic particle theory",
+            "Explaining temperature and pressure effects on gases",
+            "Effect of relative molecular mass on rate of diffusion"
+          ]
+        },
+        {
+          "id": "c-atoms",
+          "title": "Atoms, elements and compounds",
+          "subtopics": [
+            "Elements, compounds and mixtures",
+            "Atomic structure; proton number and mass number",
+            "Electronic configuration (elements 1–20)",
+            "Isotopes and atomic symbols",
+            "Ions and ionic bonding (Group I with Group VII)",
+            "Properties of ionic compounds",
+            "Covalent bonding in simple molecules and their properties",
+            "Giant covalent structures: diamond and graphite"
+          ],
+          "extended": [
+            "Isotopes have the same chemical properties",
+            "Ionic bonding between metals and non-metals generally; giant ionic lattices",
+            "Explaining properties of ionic and simple molecular substances",
+            "Covalent bonding in CH₃OH, C₂H₄, O₂, CO₂, N₂",
+            "Uses of diamond and graphite related to structure",
+            "Metallic bonding and properties of metals"
+          ]
+        },
+        {
+          "id": "c-stoichiometry",
+          "title": "Stoichiometry",
+          "subtopics": [
+            "Formulas of elements and compounds",
+            "Word equations; balancing symbol equations with state symbols",
+            "Relative atomic mass and relative molecular mass",
+            "Reacting masses in simple proportions",
+            "Concentration in g/dm³"
+          ],
+          "extended": [
+            "Formulas of ionic compounds; ionic equations",
+            "The mole and the Avogadro constant",
+            "amount = mass ÷ molar mass",
+            "Molar gas volume (24 dm³ at r.t.p.)",
+            "Reacting masses, limiting reactants, gas volumes and concentrations in mol/dm³"
+          ]
+        },
+        {
+          "id": "c-electrochemistry",
+          "title": "Electrochemistry",
+          "subtopics": [
+            "Electrolysis: electrodes and electrolyte",
+            "Products and observations at the electrodes",
+            "Hydrogen–oxygen fuel cells"
+          ],
+          "extended": [
+            "Transfer of charge during electrolysis",
+            "Predicting products for other electrolytes",
+            "Ionic half-equations at the electrodes",
+            "Advantages and disadvantages of fuel cells vs petrol engines"
+          ]
+        },
+        {
+          "id": "c-energetics",
+          "title": "Chemical energetics",
+          "subtopics": [
+            "Exothermic and endothermic reactions"
+          ],
+          "extended": [
+            "Reaction pathway diagrams; enthalpy change ΔH",
+            "Activation energy",
+            "Bond breaking is endothermic, bond making is exothermic"
+          ]
+        },
+        {
+          "id": "c-reactions",
+          "title": "Chemical reactions",
+          "subtopics": [
+            "Physical and chemical changes",
+            "Factors affecting rate of reaction; catalysts",
+            "Practical methods and interpreting rate data",
+            "Redox as gain and loss of oxygen; identifying oxidation and reduction"
+          ],
+          "extended": [
+            "Explaining rate changes with collision theory",
+            "Catalysts lower activation energy",
+            "Oxidation and reduction by electron transfer and oxidation number"
+          ]
+        },
+        {
+          "id": "c-acids",
+          "title": "Acids, bases and salts",
+          "subtopics": [
+            "Properties of acids and bases; indicators",
+            "pH scale and universal indicator",
+            "Neutralisation",
+            "Acidic and basic oxides",
+            "Preparing soluble salts",
+            "Hydrated and anhydrous substances"
+          ],
+          "extended": [
+            "Amphoteric oxides (Al₂O₃, ZnO)",
+            "Preparing insoluble salts by precipitation"
+          ]
+        },
+        {
+          "id": "c-periodic-table",
+          "title": "The Periodic Table",
+          "subtopics": [
+            "Groups and periods; metallic to non-metallic across a period",
+            "Group I: lithium, sodium, potassium",
+            "Group VII: chlorine, bromine, iodine",
+            "Transition elements",
+            "Noble gases"
+          ],
+          "extended": [
+            "Identifying and predicting trends in groups",
+            "Halogen displacement reactions"
+          ]
+        },
+        {
+          "id": "c-metals",
+          "title": "Metals",
+          "subtopics": [
+            "Physical and chemical properties of metals",
+            "Uses of metals",
+            "Alloys and why they are useful",
+            "The reactivity series",
+            "Rusting and barrier methods",
+            "Extraction: iron from hematite, aluminium from bauxite"
+          ],
+          "extended": [
+            "Why alloys are harder (structure)",
+            "Reactivity and forming positive ions",
+            "Galvanising and sacrificial protection",
+            "The blast furnace"
+          ]
+        },
+        {
+          "id": "c-environment",
+          "title": "Chemistry of the environment",
+          "subtopics": [
+            "Tests for water and its purity",
+            "Water treatment",
+            "Composition of clean air",
+            "Air pollutants: sources and effects",
+            "Reducing the effects of climate change"
+          ],
+          "extended": [
+            "Reducing acid rain",
+            "How CO₂ and methane cause global warming",
+            "Oxides of nitrogen and catalytic converters"
+          ]
+        },
+        {
+          "id": "c-organic",
+          "title": "Organic chemistry",
+          "subtopics": [
+            "Displayed formulas; saturated and unsaturated",
+            "Naming simple alkanes, alkenes and alcohols",
+            "Fossil fuels; fractional distillation of petroleum and uses of fractions",
+            "Alkanes and their combustion",
+            "Alkenes and the bromine water test",
+            "Ethanol: combustion and uses",
+            "Polymers and addition polymerisation of poly(ethene)"
+          ],
+          "extended": [
+            "Homologous series",
+            "Structural formulas of unbranched compounds",
+            "Trends in properties of petroleum fractions",
+            "Cracking",
+            "Addition reactions of alkenes",
+            "Repeat units; addition vs condensation polymers; nylon"
+          ]
+        },
+        {
+          "id": "c-analysis",
+          "title": "Experimental techniques and chemical analysis",
+          "subtopics": [
+            "Measuring apparatus; solvent, solute, solution, filtrate, residue",
+            "Acid–base titrations",
+            "Paper chromatography",
+            "Separation and purification methods",
+            "Purity from melting and boiling points",
+            "Tests for anions, cations (NaOH and NH₃), gases and flame tests"
+          ],
+          "extended": [
+            "Calculating Rf values"
+          ]
+        }
       ]
     },
     {
       "id": "physics",
       "title": "Physics",
       "topics": [
-        { "id": "p-motion", "title": "Motion, forces and energy", "subtopics": ["Length, time and measurement", "Speed, velocity and acceleration; motion graphs", "Mass, weight and density", "Forces, resultant force and Newton's laws", "Moments", "Energy stores, transfers and conservation", "Work and power", "Energy resources", "Pressure"], "extended": ["Momentum and impulse", "Efficiency calculations", "Pressure in liquids (Δp = ρgΔh)", "Centripetal force (qualitative)"], "verify": true },
-        { "id": "p-thermal", "title": "Thermal physics", "subtopics": ["Kinetic particle model", "Thermal expansion", "Specific heat capacity", "Melting, boiling and evaporation", "Conduction, convection and radiation"], "extended": ["Gas pressure and volume (pV constant)", "Specific heat capacity calculations"], "verify": true },
-        { "id": "p-waves", "title": "Waves", "subtopics": ["Wave properties and v = fλ", "Reflection and refraction of light", "Lenses", "The electromagnetic spectrum", "Sound"], "extended": ["Refractive index and critical angle", "Diffraction"], "verify": true },
-        { "id": "p-electricity", "title": "Electricity and magnetism", "subtopics": ["Magnetism", "Charge, current and potential difference", "Resistance and V = IR", "Series and parallel circuits", "Electrical power and safety", "Electromagnetic induction", "Motors and transformers"], "extended": ["Charge Q = It", "Potential dividers", "Transformer equations and power transmission"], "verify": true },
-        { "id": "p-nuclear", "title": "Nuclear physics", "subtopics": ["The nuclear atom and isotopes", "Alpha, beta and gamma radiation", "Background radiation", "Half-life", "Safety precautions"], "extended": ["Nuclear equations", "Fission and fusion"], "verify": true },
-        { "id": "p-space", "title": "Space physics", "subtopics": ["The Earth, Moon and Sun", "The Solar System", "Stars and the Universe"], "verify": true }
+        {
+          "id": "p-motion",
+          "title": "Motion, forces and energy",
+          "subtopics": [
+            "Measuring length, volume and time",
+            "Speed and average speed",
+            "Distance–time and speed–time graphs",
+            "Mass, weight and gravitational field strength",
+            "Density and floating",
+            "Effects of forces; resultant force along a line",
+            "Friction and drag",
+            "Moments and equilibrium",
+            "Centre of gravity and stability",
+            "Energy stores, transfers and conservation",
+            "Work done (W = Fd)",
+            "Energy resources: advantages and disadvantages",
+            "Efficiency (qualitative)",
+            "Power",
+            "Pressure (p = F/A)"
+          ],
+          "extended": [
+            "Scalars and vectors",
+            "Velocity and acceleration (a = Δv/Δt)",
+            "Acceleration from graphs; deceleration; free fall g = 9.8 m/s²",
+            "F = ma",
+            "Load–extension graphs, spring constant, limit of proportionality",
+            "Principle of moments calculations",
+            "Kinetic energy ½mv² and gravitational potential energy mgΔh",
+            "Fusion in the Sun and fission in reactors",
+            "Efficiency calculations"
+          ]
+        },
+        {
+          "id": "p-thermal",
+          "title": "Thermal physics",
+          "subtopics": [
+            "Properties of solids, liquids and gases; changes of state",
+            "Particle motion and temperature; random motion of particles",
+            "Thermal expansion (qualitative)",
+            "Melting, boiling, evaporation, condensation",
+            "Evaporation causes cooling",
+            "Conduction, convection and radiation",
+            "Surface colour and texture and radiation"
+          ],
+          "extended": [
+            "Forces and distances between particles; Brownian motion",
+            "Gas pressure in terms of particles; effects of temperature and volume",
+            "Applications of thermal expansion",
+            "Boiling vs evaporation; factors affecting evaporation",
+            "Explaining conduction and convection",
+            "Earth's temperature and radiation",
+            "Experiments on emitters and absorbers"
+          ]
+        },
+        {
+          "id": "p-waves",
+          "title": "Waves",
+          "subtopics": [
+            "Waves transfer energy; wavelength, frequency, amplitude",
+            "v = fλ",
+            "Reflection and plane mirrors",
+            "Refraction of light",
+            "Thin converging lenses and ray diagrams",
+            "Dispersion of white light",
+            "The electromagnetic spectrum: uses and dangers",
+            "Sound: production, range of hearing, speed, echoes, ultrasound"
+          ],
+          "extended": [
+            "Transverse and longitudinal waves",
+            "Diffraction",
+            "Refractive index (n = sin i / sin r)",
+            "Total internal reflection, critical angle, optical fibres",
+            "Virtual images and the magnifying glass",
+            "Speed of EM waves = 3.0 × 10⁸ m/s",
+            "Compressions and rarefactions"
+          ]
+        },
+        {
+          "id": "p-electricity",
+          "title": "Electricity and magnetism",
+          "subtopics": [
+            "Magnets and magnetic materials; electromagnets",
+            "Electric charge and charging by friction",
+            "Current, voltage and ammeters/voltmeters",
+            "Direct and alternating current",
+            "Resistance R = V/I",
+            "Power P = IV, energy E = IVt, kilowatt-hours",
+            "Circuit diagrams; series and parallel circuits",
+            "Electrical safety: fuses, trip switches, earthing"
+          ],
+          "extended": [
+            "Magnetic fields and induced magnetism",
+            "Charge in coulombs; electric fields; I = Q/t",
+            "E.m.f. and potential difference",
+            "Current–voltage graphs; resistance and wire length/area",
+            "Calculations in series and parallel circuits",
+            "Electromagnetic induction and the a.c. generator",
+            "Magnetic effect of current; force on a conductor; motors",
+            "Transformers and high-voltage transmission (P = I²R)"
+          ]
+        },
+        {
+          "id": "p-nuclear",
+          "title": "Nuclear physics",
+          "subtopics": [
+            "The nucleus: protons and neutrons; nuclide notation",
+            "Isotopes",
+            "Background radiation and detecting radiation",
+            "Alpha, beta and gamma radiation",
+            "Radioactive decay",
+            "Half-life",
+            "Uses, dangers and safe handling of radioactive materials"
+          ],
+          "extended": [
+            "Nuclear fission and fusion",
+            "Decay equations"
+          ]
+        },
+        {
+          "id": "p-space",
+          "title": "Space physics",
+          "subtopics": [
+            "The Solar System",
+            "Orbits and gravity",
+            "The Sun as a star",
+            "Life cycle of stars",
+            "Galaxies and the Milky Way"
+          ],
+          "extended": [
+            "Orbital speed v = 2πr/T",
+            "Gravitational field and orbital speeds across the Solar System",
+            "Stars powered by nuclear fusion",
+            "The Big Bang theory and its evidence"
+          ]
+        }
       ]
     }
   ]

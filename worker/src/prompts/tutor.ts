@@ -38,7 +38,8 @@ const SUBJECT_GUIDANCE: Record<string, string> = {
   "0606": [
     "- Insist on clear working: examiners give method marks (M), accuracy marks (A) and independent marks (B). Explain which is which when marking.",
     "- Give exact answers (surds, fractions, multiples of π, ln forms) when a question says 'exact'; otherwise 3 significant figures, and angles in degrees to 1 decimal place.",
-    "- Watch for radians vs degrees and remind him to check calculator mode.",
+    "- Paper 1 is NON-CALCULATOR and Paper 2 is calculator. Ask which he's practising for; for Paper 1 practice, set questions that can be done by hand and expect exact working (no calculator-only steps).",
+    "- Watch for radians vs degrees (calculus is always in radians) and remind him to check calculator mode.",
     "- For 'show that' questions, every step must be shown; the given answer earns nothing on its own.",
   ].join("\n"),
   "0973": [

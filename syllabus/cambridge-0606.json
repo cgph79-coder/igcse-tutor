@@ -4,10 +4,9 @@
   "code": "0606",
   "subject": "Additional Mathematics",
   "grading": "A*–E",
-  "gradingVerify": true,
   "tiers": null,
   "defaultTier": null,
-  "notes": "Single tier. Builds on IGCSE Mathematics (Extended). Answers must show full working; give exact answers (surds, fractions, multiples of π) where asked, otherwise 3 significant figures and angles in degrees to 1 decimal place.",
+  "notes": "Syllabus for exams in 2025–2027. Single tier, graded A*–E. Two 2-hour papers, 80 marks each: Paper 1 is NON-CALCULATOR, Paper 2 needs a scientific calculator. Show full working; give exact answers (surds, fractions, multiples of π, ln forms) when asked, otherwise 3 significant figures and angles to 1 decimal place. Calculus: angles always in radians. Not examined: differentiation from first principles, points of inflexion, permutations with repetition or in a circle.",
   "sections": [
     {
       "id": "algebra",
@@ -64,10 +63,10 @@
           "id": "logs-exponentials",
           "title": "Logarithmic and exponential functions",
           "subtopics": [
+            "Properties and graphs of logarithmic and exponential functions, including asymptotes",
+            "eˣ and ln x as inverse functions",
             "Laws of logarithms; change of base",
-            "Natural logarithms and e",
-            "Solving equations of the form aˣ = b",
-            "Graphs of exponential and logarithmic functions"
+            "Solving equations of the form aˣ = b"
           ]
         }
       ]
@@ -109,11 +108,10 @@
           "id": "trigonometry",
           "title": "Trigonometry",
           "subtopics": [
-            "Sine, cosine and tangent of any angle; exact values",
-            "Graphs of sin, cos and tan, including amplitude, period and modulus",
-            "Secant, cosecant and cotangent",
-            "Identities: tan θ = sin θ / cos θ, sin²θ + cos²θ = 1 and related forms",
-            "Solving trigonometric equations in a given interval",
+            "The six trigonometric functions of any angle",
+            "Amplitude and period; graphs of y = a sin bx + c, a cos bx + c, a tan bx + c",
+            "Identities: sin²A + cos²A = 1, sec²A = 1 + tan²A, cosec²A = 1 + cot²A",
+            "Solving trigonometric equations in a given interval (degrees or radians)",
             "Proving identities"
           ]
         },
@@ -121,10 +119,10 @@
           "id": "vectors",
           "title": "Vectors in two dimensions",
           "subtopics": [
-            "Vector notation, column vectors and i, j components",
-            "Magnitude and unit vectors",
-            "Position vectors and geometric problems",
-            "Velocity as a vector; constant-velocity problems"
+            "Vector notation: column vectors, AB, i and j components",
+            "Position vectors and unit vectors",
+            "Magnitude; adding, subtracting and scaling vectors; vector geometry",
+            "Composing and resolving velocities; position from a velocity vector; collision problems"
           ]
         }
       ]
@@ -174,8 +172,9 @@
           "id": "integration",
           "title": "Integration",
           "subtopics": [
-            "Integration as the reverse of differentiation",
-            "Integrals of xⁿ, eᵃˣ⁺ᵇ, 1/(ax + b), sin and cos of (ax + b)",
+            "Integration as the reverse of differentiation (+ c)",
+            "Integrating powers of x, including 1/x and 1/(ax + b)",
+            "Integrating (ax + b)ⁿ, sin(ax + b), cos(ax + b), sec²(ax + b), eᵃˣ⁺ᵇ",
             "Definite integrals",
             "Area under a curve and between a line and a curve"
           ]

@@ -5,6 +5,7 @@ import { ApiError, login, streamChat, type ChatMessage } from "./api";
 import { extractScore, renderMarkdown } from "./render";
 import { LocalProgressStore, prefs, type ProgressStore } from "./storage";
 import { applyTheme, el, initTheme, nextTheme } from "./ui";
+import { startUpdateCheck } from "./update-check";
 import { ACCEPT, MAX_PHOTOS, onAttachmentWarning, readAttachment, type Attachment } from "./attachments";
 
 type Mode = "learn" | "practise" | "mark" | "quiz";
@@ -568,3 +569,4 @@ async function renderProgress(panel: HTMLElement) {
 }
 
 render();
+startUpdateCheck(() => !state.busy && state.attachments.length === 0 && !(textarea?.value ?? "").trim());

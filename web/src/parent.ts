@@ -3,6 +3,7 @@ import "./styles.css";
 import { getJson, login, ApiError } from "./api";
 import { renderMarkdown } from "./render";
 import { el, initTheme } from "./ui";
+import { startUpdateCheck } from "./update-check";
 
 interface SessionSummary {
   key: string;
@@ -167,3 +168,4 @@ async function showSession(key: string) {
 
 if (token) showList();
 else showLogin();
+startUpdateCheck(() => true);

@@ -58,6 +58,8 @@ describe("photo uploads", () => {
     const sent = JSON.parse(init.body as string);
     expect(sent.model).toBe("vision-model");
     expect(sent.provider).toEqual({ data_collection: "deny" });
+    expect(sent.reasoning).toEqual({ enabled: false });
+    expect(sent.max_tokens).toBe(2000);
     const last = sent.messages[sent.messages.length - 1];
     expect(last.content[0]).toEqual({ type: "text", text: "Mark this" });
     expect(last.content[1]).toEqual({ type: "image_url", image_url: { url: IMG } });
@@ -67,6 +69,22 @@ describe("photo uploads", () => {
     const log = (env.TUTOR_KV as unknown as MemoryKV).store.get("log:student:photo-session-1")!.value;
     expect(log).toContain("1 photo(s) attached");
     expect(log).not.toContain("base64");
+  });
+
+  it("reports an empty reply as an error instead of a blank message", async () => {
+    const env = visionEnv();
+    const token = await login(env);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(sseBody([]), { status: 200 })));
+    const { ctx, settle } = makeCtx();
+    const res = await worker.fetch(
+      req("/api/chat", { method: "POST", token, body: body([{ role: "user", content: "Mark this", images: [IMG] }]) }),
+      env as never,
+      ctx,
+    );
+    const text = await res.text();
+    await settle();
+    expect(text).toContain('"type":"error"');
+    expect(text).not.toContain('"type":"done"');
   });
 
   it("keeps text-only chat on the normal model", async () => {

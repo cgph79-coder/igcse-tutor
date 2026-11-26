@@ -215,7 +215,9 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
 
   let upstream: Response;
   try {
-    upstream = await callLlm(target, llmMessages, num(env.MAX_TOKENS, 800) + (usesPhotos ? 400 : 0));
+    // Marking (especially several photographed pages) needs more room than a teaching reply.
+    const maxTokens = usesPhotos ? num(env.MAX_TOKENS_PHOTOS, 2000) : num(env.MAX_TOKENS, 800) + (mode === "mark" ? 400 : 0);
+    upstream = await callLlm(target, llmMessages, maxTokens);
   } catch {
     return json(request, env, { error: "The tutor service couldn't be reached. Please try again in a moment." }, 502);
   }
@@ -234,7 +236,17 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
       let result;
       try {
         result = await readOpenAiStream(upstream.body!, (text) => write({ type: "delta", text }));
-        await write({ type: "done", truncated: result.finishReason === "length" });
+        // Diagnostics only — never message content.
+        console.log(
+          `llm model=${target.model} finish=${result.finishReason ?? "?"} prompt=${result.promptTokens ?? "?"} ` +
+            `completion=${result.completionTokens ?? "?"} reasoning=${result.reasoningTokens ?? 0} chars=${result.text.length}` +
+            (result.error ? ` error=${result.error.slice(0, 120)}` : ""),
+        );
+        if (!result.text.trim()) {
+          await write({ type: "error", message: "The tutor didn't manage to reply that time. Please send it again." });
+        } else {
+          await write({ type: "done", truncated: result.finishReason === "length" });
+        }
       } catch {
         await write({ type: "error", message: "The reply was interrupted. Please try again." }).catch(() => {});
       } finally {

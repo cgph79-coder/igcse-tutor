@@ -19,6 +19,7 @@ export interface Env {
   LLM_VISION_MODEL?: string;
   ALLOWED_ORIGINS: string;
   MAX_TOKENS?: string;
+  MAX_TOKENS_PHOTOS?: string;
   MAX_HISTORY_MESSAGES?: string;
   MAX_HISTORY_CHARS?: string;
   DAILY_REQUEST_LIMIT?: string;

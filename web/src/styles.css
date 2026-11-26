@@ -158,3 +158,8 @@ form.composer textarea {
 .thumb { object-fit: cover; border-radius: 10px; border: 1px solid var(--border); display: block; }
 .thumbs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; white-space: normal; }
 .msg.user .thumb { width: 96px; height: 96px; border-color: rgba(255, 255, 255, 0.4); }
+
+.continue-btn {
+  margin-left: 6px; border: none; border-radius: 999px; padding: 4px 12px;
+  background: var(--accent); color: var(--accent-text); font-weight: 600; font-size: 14px;
+}

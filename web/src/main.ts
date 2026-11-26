@@ -479,7 +479,16 @@ async function send(text: string, attachments: Attachment[] = []) {
     bubble.classList.remove("typing");
     fillBubble(bubble, reply);
     state.messages.push(reply);
-    if (result.truncated) addNotice("That reply hit the length limit. Say “continue” if you need the rest.");
+    if (result.truncated) {
+      const btn = el("button", { type: "button", class: "continue-btn" }, "Continue ▸");
+      const note = el("div", { class: "msg notice", role: "status" }, "That reply was long, so it stopped early. ", btn);
+      btn.addEventListener("click", () => {
+        note.remove();
+        send("Please continue from exactly where you stopped.");
+      });
+      chatEl.append(note);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
 
     const { score } = extractScore(reply.content);
     if (score && state.mode !== "learn") {

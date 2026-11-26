@@ -56,7 +56,11 @@ export async function callLlm(target: LlmTarget, messages: LlmMessage[], maxToke
     stream_options: { include_usage: true },
   };
   // On OpenRouter, only use providers that don't store or train on prompts (he's a minor).
-  if (/openrouter\.ai/.test(target.baseUrl)) body.provider = { data_collection: "deny" };
+  if (/openrouter\.ai/.test(target.baseUrl)) {
+    body.provider = { data_collection: "deny" };
+    // Thinking models can otherwise spend the whole max_tokens on hidden reasoning and reply with nothing.
+    body.reasoning = { enabled: false };
+  }
   return fetch(url, {
     method: "POST",
     headers: {
@@ -74,6 +78,8 @@ export interface StreamResult {
   promptTokens?: number;
   completionTokens?: number;
   finishReason?: string;
+  reasoningTokens?: number;
+  error?: string;
 }
 
 /**
@@ -106,7 +112,10 @@ export async function readOpenAiStream(
       if (json.usage) {
         result.promptTokens = json.usage.prompt_tokens;
         result.completionTokens = json.usage.completion_tokens;
+        result.reasoningTokens = json.usage.completion_tokens_details?.reasoning_tokens;
       }
+      // Some providers (e.g. OpenRouter) report mid-stream failures as an error object.
+      if (json.error) result.error = String(json.error.message ?? json.error.code ?? "provider error");
     } catch {
       // Ignore keep-alive comments or malformed lines.
     }

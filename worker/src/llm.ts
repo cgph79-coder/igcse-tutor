@@ -1,33 +1,71 @@
 /**
  * Provider-agnostic call to an OpenAI-compatible chat completions endpoint
  * (DeepSeek, OpenRouter, Anthropic's compatibility endpoint, OpenAI, …).
- * Switching provider = changing LLM_BASE_URL, LLM_MODEL and the LLM_API_KEY secret.
+ * Switching provider = changing the base URL, model and API key.
  */
 import type { Env } from "./env";
+import type { ChatMessage } from "./history";
+
+export type ContentPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
 
 export interface LlmMessage {
   role: "system" | "user" | "assistant";
-  content: string;
+  content: string | ContentPart[];
 }
 
-export async function callLlm(env: Env, messages: LlmMessage[], maxTokens: number): Promise<Response> {
-  const url = env.LLM_BASE_URL.replace(/\/+$/, "") + "/chat/completions";
+export interface LlmTarget {
+  baseUrl: string;
+  model: string;
+  apiKey: string;
+}
+
+/** Text-only model for normal chat. */
+export function textTarget(env: Env): LlmTarget {
+  return { baseUrl: env.LLM_BASE_URL, model: env.LLM_MODEL, apiKey: env.LLM_API_KEY };
+}
+
+/** Image-capable model for messages with photos, or null if photos aren't configured. */
+export function visionTarget(env: Env): LlmTarget | null {
+  if (!env.LLM_VISION_MODEL || !env.LLM_VISION_BASE_URL) return null;
+  // Only reuse the main key if photos go to the same provider — never send a key to another service.
+  const sameProvider = env.LLM_VISION_BASE_URL.replace(/\/+$/, "") === env.LLM_BASE_URL.replace(/\/+$/, "");
+  const apiKey = env.LLM_VISION_API_KEY || (sameProvider ? env.LLM_API_KEY : "");
+  return apiKey ? { baseUrl: env.LLM_VISION_BASE_URL, model: env.LLM_VISION_MODEL, apiKey } : null;
+}
+
+/** Convert a chat message to the OpenAI wire format (text + image parts). */
+export function toLlmMessage(m: ChatMessage): LlmMessage {
+  if (!m.images?.length) return { role: m.role, content: m.content };
+  return {
+    role: m.role,
+    content: [
+      { type: "text", text: m.content || "Please check the work in this photo." },
+      ...m.images.map((url) => ({ type: "image_url" as const, image_url: { url } })),
+    ],
+  };
+}
+
+export async function callLlm(target: LlmTarget, messages: LlmMessage[], maxTokens: number): Promise<Response> {
+  const url = target.baseUrl.replace(/\/+$/, "") + "/chat/completions";
+  const body: Record<string, unknown> = {
+    model: target.model,
+    messages,
+    max_tokens: maxTokens,
+    temperature: 0.4,
+    stream: true,
+    stream_options: { include_usage: true },
+  };
+  // On OpenRouter, only use providers that don't store or train on prompts (he's a minor).
+  if (/openrouter\.ai/.test(target.baseUrl)) body.provider = { data_collection: "deny" };
   return fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${env.LLM_API_KEY}`,
-      // Harmless for other providers; OpenRouter uses these to label usage.
+      Authorization: `Bearer ${target.apiKey}`,
+      // Harmless for other providers; OpenRouter uses this to label usage.
       "X-Title": "IGCSE Tutor",
     },
-    body: JSON.stringify({
-      model: env.LLM_MODEL,
-      messages,
-      max_tokens: maxTokens,
-      temperature: 0.4,
-      stream: true,
-      stream_options: { include_usage: true },
-    }),
+    body: JSON.stringify(body),
   });
 }
 

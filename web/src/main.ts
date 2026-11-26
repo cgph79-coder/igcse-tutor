@@ -5,6 +5,7 @@ import { ApiError, login, streamChat, type ChatMessage } from "./api";
 import { extractScore, renderMarkdown } from "./render";
 import { LocalProgressStore, prefs, type ProgressStore } from "./storage";
 import { applyTheme, el, initTheme, nextTheme } from "./ui";
+import { ACCEPT, MAX_PHOTOS, readAttachment, type Attachment } from "./attachments";
 
 type Mode = "learn" | "practise" | "mark" | "quiz";
 const MODES: { id: Mode; label: string }[] = [
@@ -31,6 +32,7 @@ const state = {
   messages: [] as ChatMessage[],
   busy: false,
   recorded: false,
+  attachments: [] as Attachment[],
 };
 
 function newSessionId() {
@@ -267,7 +269,7 @@ function emptyState() {
   const hint: Record<Mode, string> = {
     learn: "I'll explain step by step and check you've got it.",
     practise: "I'll set an original exam-style question, then mark your answer.",
-    mark: "Paste the question (with marks, e.g. [4]) and your answer, and I'll mark it like an examiner.",
+    mark: "Paste or photograph the question (with marks, e.g. [4]) and your answer, and I'll mark it like an examiner. Tap 📎 to add a photo or file.",
     quiz: "Quick-fire recall questions — answer them all in one go.",
   };
   const qs = el("div", { class: "quick-starts" });
@@ -292,6 +294,11 @@ function messageBubble(m: ChatMessage, typing = false) {
 function fillBubble(div: HTMLElement, m: ChatMessage) {
   if (m.role === "user") {
     div.textContent = m.content;
+    if (m.images?.length) {
+      const row = el("div", { class: "thumbs" });
+      for (const src of m.images) row.append(el("img", { src, alt: "Photo of work", class: "thumb" }));
+      div.append(row);
+    }
     return;
   }
   const { text, score } = extractScore(m.content);
@@ -308,15 +315,66 @@ function addNotice(text: string, kind: "notice" | "error" = "notice") {
 let textarea: HTMLTextAreaElement;
 let sendBtn: HTMLButtonElement;
 
+let trayEl: HTMLElement;
+
+function renderTray() {
+  trayEl.replaceChildren();
+  trayEl.classList.toggle("hidden", state.attachments.length === 0);
+  if (!state.attachments.length) return;
+  const items = el("div", { class: "tray-items" });
+  state.attachments.forEach((a, i) => {
+    const remove = el("button", { type: "button", class: "tray-remove", "aria-label": `Remove ${a.name}` }, "×");
+    remove.addEventListener("click", () => {
+      state.attachments.splice(i, 1);
+      renderTray();
+    });
+    items.append(el("div", { class: "tray-item" },
+      a.kind === "image" ? el("img", { src: a.dataUrl, alt: a.name, class: "thumb" }) : el("span", { class: "file-chip" }, `📄 ${a.name}`),
+      remove,
+    ));
+  });
+  trayEl.append(items, el("div", { class: "tray-hint" }, "Crop out your name and school before sending. Photos aren't saved."));
+}
+
 function composerView() {
   textarea = el("textarea", {
     rows: "1",
-    placeholder: state.mode === "mark" ? "Paste the question and your answer…" : "Type your answer or question…",
+    placeholder: state.mode === "mark" ? "Type, or tap 📎 for a photo…" : "Type your answer or question…",
     "aria-label": "Message",
     enterkeyhint: "send",
   }) as HTMLTextAreaElement;
   sendBtn = el("button", { class: "send-btn", type: "submit" }, "Send") as HTMLButtonElement;
-  const form = el("form", { class: "composer" }, textarea, sendBtn) as HTMLFormElement;
+
+  const fileInput = el("input", { type: "file", accept: ACCEPT, multiple: "", class: "hidden", "aria-hidden": "true" }) as HTMLInputElement;
+  const attachBtn = el("button", { type: "button", class: "attach-btn", title: "Add a photo or file", "aria-label": "Add a photo or file" }, "📎") as HTMLButtonElement;
+  attachBtn.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", async () => {
+    const files = [...(fileInput.files ?? [])];
+    fileInput.value = "";
+    attachBtn.disabled = true;
+    attachBtn.textContent = "…";
+    for (const f of files) {
+      try {
+        const added = await readAttachment(f);
+        for (const a of added) {
+          if (a.kind === "image" && state.attachments.filter((x) => x.kind === "image").length >= MAX_PHOTOS) {
+            addNotice(`You can send up to ${MAX_PHOTOS} photos at once.`);
+            break;
+          }
+          state.attachments.push(a);
+        }
+      } catch (ex) {
+        addNotice(ex instanceof Error ? ex.message : "Couldn't read that file.", "error");
+      }
+    }
+    attachBtn.disabled = false;
+    attachBtn.textContent = "📎";
+    renderTray();
+  });
+
+  trayEl = el("div", { class: "tray hidden" });
+  renderTray();
+  const row = el("form", { class: "composer" }, attachBtn, fileInput, textarea, sendBtn) as HTMLFormElement;
   const autosize = () => {
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
@@ -326,21 +384,39 @@ function composerView() {
     // Enter sends on desktop; on phones Enter makes a new line and the Send button sends.
     if (e.key === "Enter" && !e.shiftKey && window.matchMedia("(pointer: fine)").matches) {
       e.preventDefault();
-      form.requestSubmit();
+      row.requestSubmit();
     }
   });
-  form.addEventListener("submit", (e) => {
+  row.addEventListener("submit", (e) => {
     e.preventDefault();
     const text = textarea.value.trim();
-    if (!text) return;
+    if (!text && state.attachments.length === 0) return;
+    const attachments = state.attachments;
+    state.attachments = [];
+    renderTray();
     textarea.value = "";
     autosize();
-    send(text);
+    send(text, attachments);
   });
-  return form;
+  return el("div", { class: "composer-wrap" }, trayEl, row);
 }
 
-async function send(text: string) {
+/** Only the most recent photos are re-sent; older ones are dropped to keep uploads small. */
+function forSending(messages: ChatMessage[]): ChatMessage[] {
+  let seen = false;
+  return messages
+    .slice()
+    .reverse()
+    .map((m) => {
+      if (!m.images?.length) return m;
+      if (seen) return { role: m.role, content: m.content };
+      seen = true;
+      return m;
+    })
+    .reverse();
+}
+
+async function send(text: string, attachments: Attachment[] = []) {
   if (state.busy || !state.token) return;
   const s = syllabus();
   const found = findTopic(s, state.topicId);
@@ -351,7 +427,13 @@ async function send(text: string) {
   if (state.setupOpen && state.messages.length === 0) state.setupOpen = false; // give the chat room on phones
   document.querySelector(".setup")?.replaceWith(setupView());
 
-  const userMsg: ChatMessage = { role: "user", content: text };
+  const images = attachments.filter((a) => a.kind === "image").map((a) => a.dataUrl);
+  const fileText = attachments
+    .filter((a): a is Extract<Attachment, { kind: "text" }> => a.kind === "text")
+    .map((a) => `\n\n[From file: ${a.name}]\n${a.text}`)
+    .join("");
+  const content = (text || (images.length ? "Please check my work in the photo." : "")) + fileText;
+  const userMsg: ChatMessage = { role: "user", content, ...(images.length ? { images } : {}) };
   state.messages.push(userMsg);
   chatEl.querySelector(".empty")?.remove();
   chatEl.append(messageBubble(userMsg));
@@ -377,7 +459,7 @@ async function send(text: string) {
         mode: state.mode,
         difficulty: state.mode === "practise" ? state.difficulty : undefined,
         commandWord: state.mode === "practise" ? state.commandWord : undefined,
-        messages: state.messages,
+        messages: forSending(state.messages),
       },
       (delta) => {
         reply.content += delta;
@@ -416,6 +498,8 @@ async function send(text: string) {
     if (ex instanceof ApiError && ex.kind === "limit") addNotice(ex.message);
     else addNotice(ex instanceof Error ? ex.message : "Something went wrong.", "error");
     textarea.value = text;
+    state.attachments = attachments;
+    renderTray();
   } finally {
     state.busy = false;
     sendBtn.disabled = false;

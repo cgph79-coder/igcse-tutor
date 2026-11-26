@@ -6,6 +6,8 @@ An AI study and revision tutor for Cambridge IGCSE, built for one student first 
 
 **Modes:** Learn · Practise (original exam-style questions, marked) · Mark my answer · Quick quiz. Progress and a "weak topics" list are kept on the device.
 
+**Photos and files:** tap 📎 to add up to 4 photos of handwritten work, a PDF, a Word (.docx) or a .txt file. Typed files are read on the phone and go through the normal tutor. Photos and scanned PDFs go to an image-reading model (Claude Sonnet via OpenRouter by default), which marks the work against the syllabus and mark-scheme principles.
+
 ## How it fits together
 
 ```
@@ -164,6 +166,21 @@ npm run deploy:worker
 ```
 
 Model names change over time; check the provider's model list if you get an error.
+
+### Photo checking (OpenRouter)
+
+Photos need a model that can read images; DeepSeek can't. By default they go to Claude Sonnet through OpenRouter (about 1.5p per photo checked). Everything else stays on DeepSeek.
+
+1. Sign up at openrouter.ai, add credit (e.g. $10, auto top-up off), switch off prompt training/logging in **Settings → Privacy**, and create a key under **Keys** with a credit limit.
+2. Give the key to the Worker:
+
+   ```bash
+   npx wrangler secret put LLM_VISION_API_KEY --cwd worker
+   ```
+
+Until that key is set, the app tells him photo checking isn't switched on yet. To use a cheaper model, change `LLM_VISION_MODEL` in `worker/wrangler.toml` (e.g. `anthropic/claude-haiku-5.5`) and run `npm run deploy:worker`.
+
+Privacy: photos are shrunk on the phone, sent only through your Worker, and never stored — the parent log shows "[1 photo(s) attached]" plus the tutor's feedback. The privacy filter can't remove names written in a photo, so the app reminds him to crop them out, and the tutor is told to ignore any it sees. On OpenRouter the Worker asks for providers that don't store or train on prompts.
 
 ### Change the daily limits or reply length
 

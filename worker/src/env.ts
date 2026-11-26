@@ -4,6 +4,8 @@ export interface Env {
 
   // Secrets (set with `wrangler secret put`)
   LLM_API_KEY: string;
+  /** Key for the photo-reading model; falls back to LLM_API_KEY only if both use the same provider. */
+  LLM_VISION_API_KEY?: string;
   TUTOR_PASSCODE: string;
   PARENT_PASSWORD: string;
   TOKEN_SECRET: string;
@@ -12,6 +14,9 @@ export interface Env {
   // Plain config (wrangler.toml [vars])
   LLM_BASE_URL: string;
   LLM_MODEL: string;
+  /** Model that can read images (used only when a message has photos). Empty = photos disabled. */
+  LLM_VISION_BASE_URL?: string;
+  LLM_VISION_MODEL?: string;
   ALLOWED_ORIGINS: string;
   MAX_TOKENS?: string;
   MAX_HISTORY_MESSAGES?: string;

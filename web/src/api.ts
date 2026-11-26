@@ -3,6 +3,8 @@ import { WORKER_URL } from "./config";
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  /** Photos (JPEG data URLs) attached to a user message. */
+  images?: string[];
 }
 
 export interface ChatRequest {

@@ -21,6 +21,12 @@ LLM_MODEL = "deepseek-chat"
 # LLM_BASE_URL = "https://openrouter.ai/api/v1"
 # LLM_MODEL = "deepseek/deepseek-chat"
 
+# --- Photo checking (model that can read images; used only when a message has photos) ---
+# Its key is the LLM_VISION_API_KEY secret. Until that's set, photos are politely refused.
+# Cheaper alternative with the same setup: "anthropic/claude-haiku-5.5".
+LLM_VISION_BASE_URL = "https://openrouter.ai/api/v1"
+LLM_VISION_MODEL = "anthropic/claude-sonnet-5.5"
+
 # Only this site may call the Worker (comma-separated list allowed).
 ALLOWED_ORIGINS = "https://cgph79-coder.github.io"
 

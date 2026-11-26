@@ -46,6 +46,12 @@ The Age Appropriate Design Code (Children's Code) applies to online services lik
 - **DeepSeek:** check current terms on minors and on commercial use; data is stored in the PRC.
 - Prefer providers offering zero data retention / no training on API data, and record this in the DPIA.
 
+## 5a. Photos of children's work
+
+- Photos can contain names, faces, school logos or handwriting, which the text privacy filter can't remove. Consider on-device face/text redaction before upload, and say clearly in the privacy notice that images are processed by a third-party AI provider.
+- Keep the current rule of never storing images; if stored for parent review, set short retention and encrypt at rest (e.g. R2 with lifecycle rules).
+- Check each vision provider's terms for images of minors and confirm zero data retention.
+
 ## 6. Data residency and transfers
 
 - **DeepSeek direct** stores data in China. Transfers of UK personal data there need a lawful transfer mechanism and a transfer risk assessment, which is hard to justify for children's data. Strongly prefer UK/EU/US hosting.

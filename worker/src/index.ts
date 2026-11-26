@@ -12,8 +12,8 @@
  */
 import { bearer, checkSecret, issueToken, verifyToken, type Role, type TokenPayload } from "./auth";
 import { num, type Env } from "./env";
-import { sanitizeMessages, trimHistory } from "./history";
-import { callLlm, readOpenAiStream, type LlmMessage } from "./llm";
+import { hasImages, keepLatestImages, sanitizeMessages, trimHistory } from "./history";
+import { callLlm, readOpenAiStream, textTarget, toLlmMessage, visionTarget, type LlmMessage } from "./llm";
 import { appendToLog, listLogs, SESSION_ID, type LogMessage } from "./logs";
 import { parseBlockedTerms, stripPii } from "./pii";
 import { buildSystemPrompt, COMMAND_WORDS, type CommandWord, type Difficulty, type Mode } from "./prompts/tutor";
@@ -138,6 +138,7 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
     return { ...m, content: r.text };
   });
   const latest = messages[messages.length - 1];
+  const photoCount = latest.images?.length ?? 0;
   const safety = assessSafety(rawMessages[rawMessages.length - 1].content);
   const flags = safety === "none" ? [] : [safety === "high" ? "safeguarding-high" : "wellbeing"];
 
@@ -154,7 +155,8 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
   const retention = num(env.LOG_RETENTION_DAYS, 90);
   const userLog: LogMessage = {
     role: "user",
-    content: latest.content,
+    // Photos are never stored in the logs — only a note that they were sent.
+    content: photoCount ? `${latest.content}\n[${photoCount} photo(s) attached]`.trim() : latest.content,
     at: now.toISOString(),
     ...(lastRedactions.length ? { redactions: lastRedactions } : {}),
   };
@@ -189,6 +191,15 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
     return new Response(readable, { headers });
   }
 
+  const withImages = keepLatestImages(messages);
+  const history = trimHistory(withImages, num(env.MAX_HISTORY_MESSAGES, 16), num(env.MAX_HISTORY_CHARS, 24000));
+  const usesPhotos = hasImages(history);
+  const target = usesPhotos ? visionTarget(env) : textTarget(env);
+  if (!target) {
+    await writer.close();
+    return json(request, env, { error: "Photo checking isn't switched on yet. Please type your answer instead, or ask a parent to set it up." }, 400);
+  }
+
   const system = buildSystemPrompt({
     syllabus,
     section: found.section,
@@ -198,13 +209,13 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
     difficulty,
     commandWord,
     quizLength: typeof body.quizLength === "number" ? body.quizLength : undefined,
+    hasImages: usesPhotos,
   });
-  const history = trimHistory(messages, num(env.MAX_HISTORY_MESSAGES, 16), num(env.MAX_HISTORY_CHARS, 24000));
-  const llmMessages: LlmMessage[] = [{ role: "system", content: system }, ...history];
+  const llmMessages: LlmMessage[] = [{ role: "system", content: system }, ...history.map(toLlmMessage)];
 
   let upstream: Response;
   try {
-    upstream = await callLlm(env, llmMessages, num(env.MAX_TOKENS, 800));
+    upstream = await callLlm(target, llmMessages, num(env.MAX_TOKENS, 800) + (usesPhotos ? 400 : 0));
   } catch {
     return json(request, env, { error: "The tutor service couldn't be reached. Please try again in a moment." }, 502);
   }
@@ -231,7 +242,9 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
       }
       const text = result?.text ?? "";
       const tokens =
-        (result?.promptTokens ?? estimateTokens(system + history.map((m) => m.content).join(""))) +
+        (result?.promptTokens ??
+          estimateTokens(system + history.map((m) => m.content).join("")) +
+            history.reduce((n, m) => n + (m.images?.length ?? 0) * 1600, 0)) +
         (result?.completionTokens ?? estimateTokens(text));
       await recordUsage(env.TUTOR_KV, user.sub, tokens);
       await appendToLog(

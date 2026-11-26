@@ -1,20 +1,57 @@
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  /** Photos of work, as data URLs (JPEG/PNG/WebP). Only on user messages. */
+  images?: string[];
 }
 
-/** Validate and clean the message list sent by the browser. */
-export function sanitizeMessages(input: unknown, maxMessageChars = 8000): ChatMessage[] | null {
+export const MAX_IMAGES_PER_MESSAGE = 4;
+export const MAX_IMAGE_CHARS = 2_000_000; // ≈1.5 MB per photo once base64-encoded
+const IMAGE_DATA_URL = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/;
+
+/** Validate and clean the message list sent by the browser. Returns null if anything is malformed. */
+export function sanitizeMessages(input: unknown, maxMessageChars = 12000): ChatMessage[] | null {
   if (!Array.isArray(input) || input.length === 0 || input.length > 200) return null;
   const out: ChatMessage[] = [];
   for (const m of input) {
     if (!m || typeof m !== "object") return null;
-    const { role, content } = m as Record<string, unknown>;
+    const { role, content, images } = m as Record<string, unknown>;
     if ((role !== "user" && role !== "assistant") || typeof content !== "string") return null;
-    out.push({ role, content: content.slice(0, maxMessageChars) });
+    const msg: ChatMessage = { role, content: content.slice(0, maxMessageChars) };
+    if (images !== undefined) {
+      if (role !== "user" || !Array.isArray(images) || images.length > MAX_IMAGES_PER_MESSAGE) return null;
+      for (const img of images) {
+        if (typeof img !== "string" || img.length > MAX_IMAGE_CHARS || !IMAGE_DATA_URL.test(img)) return null;
+      }
+      if (images.length) msg.images = images as string[];
+    }
+    out.push(msg);
   }
   if (out[out.length - 1].role !== "user") return null;
   return out;
+}
+
+/**
+ * Keep photos only on the most recent message that has any, so follow-up questions
+ * about the same photo still work but old photos don't get re-sent (and re-billed).
+ */
+export function keepLatestImages(messages: ChatMessage[]): ChatMessage[] {
+  let found = false;
+  const out = [...messages];
+  for (let i = out.length - 1; i >= 0; i--) {
+    const m = out[i];
+    if (!m.images?.length) continue;
+    if (found) {
+      const { images, ...rest } = m;
+      out[i] = { ...rest, content: `${rest.content}\n[${images.length} photo(s) shared earlier]`.trim() };
+    }
+    found = true;
+  }
+  return out;
+}
+
+export function hasImages(messages: ChatMessage[]): boolean {
+  return messages.some((m) => m.images?.length);
 }
 
 /**

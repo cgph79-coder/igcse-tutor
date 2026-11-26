@@ -132,3 +132,29 @@ form.composer textarea {
 .flag { color: var(--danger); font-weight: 600; }
 .log-msg { padding: 8px 0; border-bottom: 1px solid var(--border); }
 .log-msg .who { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ---- attachments ---- */
+.composer-wrap { border-top: 1px solid var(--border); background: var(--bg); }
+.composer-wrap form.composer { border-top: none; }
+.attach-btn {
+  border: 1px solid var(--border); background: var(--surface); border-radius: 12px;
+  min-width: 44px; min-height: 44px; font-size: 18px; padding: 0;
+}
+.attach-btn:disabled { opacity: 0.5; }
+.tray { padding: 10px 16px 0; }
+.tray-items { display: flex; gap: 8px; flex-wrap: wrap; }
+.tray-item { position: relative; }
+.tray-item .thumb { width: 64px; height: 64px; }
+.tray-remove {
+  position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%;
+  border: none; background: var(--text); color: var(--bg); font-size: 14px; line-height: 22px; padding: 0;
+}
+.tray-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.file-chip {
+  display: inline-flex; align-items: center; height: 64px; padding: 0 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface); font-size: 13px; max-width: 220px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.thumb { object-fit: cover; border-radius: 10px; border: 1px solid var(--border); display: block; }
+.thumbs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; white-space: normal; }
+.msg.user .thumb { width: 96px; height: 96px; border-color: rgba(255, 255, 255, 0.4); }

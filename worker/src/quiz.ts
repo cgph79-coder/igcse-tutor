@@ -57,7 +57,11 @@ Rules:
 - He must be able to recognise the answer immediately. No calculations beyond mental arithmetic you can do instantly, no multi-step reasoning, no "show that", no data or graphs.
 - Phrase every question positively. Never "Which is NOT…", "EXCEPT", "true or false", "all of the above" or "none of the above".
 - The 4 options are the same kind of thing with a similar length, so the right one doesn't stand out. Wrong options are common confusions or mix-ups for this topic.
-- Exactly one option is correct. Make sure every fact is accurate and on this syllabus${s.tiers ? " and tier" : ""}.
+- Exactly one option is correct, and no other option could reasonably be argued to be correct. Make sure every fact is accurate and on this syllabus${s.tiers ? " and tier" : ""}.
+- Be exact with dates, names, numbers and titles. Where a fact is often confused (e.g. an organisation founded under one name and renamed later, or a person holding two titles), word the question so only one answer fits, or choose a different fact.
+- Avoid "main", "most" or "best" questions unless the answer is the standard textbook one.
+- Every wrong option must be a real, plausible item of the same kind (a real person, date, term or value). No filler such as "X's deputy" or joke options.
+- The explanation must agree with the marked answer.
 - Cover the whole topic: no two cards test the same fact.
 - Give every card a "level", still as quick recall (harder means more precise, not longer):
   1 = the essentials anyone revising this topic must know;
@@ -176,4 +180,55 @@ export async function addToBank(kv: KVNamespace, key: string, fresh: McqQuestion
 /** Serve from the bank most of the time once it's big enough, so the questions stay varied but cheap. */
 export function shouldServeFromBank(bankSize: number, count: number, rand = Math.random): boolean {
   return bankSize >= Math.max(BANK_SERVE_MIN, count) && rand() < 0.75;
+}
+
+/**
+ * Second pass: the model checks a batch of cards before they are used or saved. A card stays
+ * only if the checker explicitly passes it, so a garbled or missing verdict counts as a reject.
+ */
+export function buildCheckPrompt(o: { syllabus: Syllabus; section: Section; topic: Topic; tier: string | null }, cards: McqQuestion[]): string {
+  const { syllabus: s, section, topic } = o;
+  const list = cards
+    .map((c, i) => `${i}. ${c.q}\n   Options: ${c.options.map((x, j) => `(${j}) ${x}`).join("  ")}\n   Marked correct: (${c.answer})\n   Explanation: ${c.explain}`)
+    .join("\n");
+  return `You are a careful ${s.boardName} IGCSE ${s.subject} (${s.code}) examiner checking revision cards for a 16-year-old before he sees them.
+Topic: ${section.title} → ${topic.title}.
+
+Each card is a quick four-option recall question. REJECT a card if ANY of these is true:
+- The marked answer is wrong, or is not the best answer.
+- Another option could also reasonably be marked correct (for example a different but defensible date, name or title).
+- A date, number, name or term in the question, options or explanation is inaccurate, or the explanation contradicts the marked answer.
+- The question depends on opinion ("main", "most", "best") and the marked answer isn't the standard textbook answer.
+- An option is obvious filler that nobody would choose (e.g. "X's deputy", a joke option).
+- It tests the same fact as an earlier card in this list.
+- It is outside this topic or beyond IGCSE level.
+Otherwise PASS it. When unsure, REJECT. Check each fact yourself; don't trust the explanation.
+
+Cards:
+${list}
+
+Reply with ONLY this JSON, one verdict per card, nothing else:
+{"verdicts":[{"i":0,"ok":true},{"i":1,"ok":false,"reason":"short reason"}]}`;
+}
+
+/** Indices of the cards the checker passed. Anything unclear is treated as rejected; null if the reply is unusable. */
+export function parseVerdicts(text: string, count: number): Set<number> | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  let data: unknown;
+  try {
+    data = JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+  const list = (data as { verdicts?: unknown })?.verdicts;
+  if (!Array.isArray(list)) return null;
+  const passed = new Set<number>();
+  for (const v of list) {
+    const r = v as { i?: unknown; ok?: unknown };
+    const i = Number(r?.i);
+    if (Number.isInteger(i) && i >= 0 && i < count && r.ok === true) passed.add(i);
+  }
+  return passed;
 }

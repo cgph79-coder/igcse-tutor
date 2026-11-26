@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
-import { bankKey, buildRound, parseQuestions, shuffleOptions, validateQuestion, type McqQuestion } from "../src/quiz";
+import { bankKey, buildRound, parseQuestions, parseVerdicts, shuffleOptions, validateQuestion, type McqQuestion } from "../src/quiz";
 import { makeCtx, makeEnv, MemoryKV, sseBody } from "./helpers";
 
 const ORIGIN = "https://site.example";
@@ -32,6 +32,17 @@ const q = (i: number, extra: Record<string, unknown> = {}) => ({
 });
 
 const reply = (n: number) => JSON.stringify({ questions: Array.from({ length: n }, (_, i) => q(i)) });
+/** Checker reply: passes every card except the listed indices. */
+const verdicts = (n: number, reject: number[] = []) =>
+  JSON.stringify({ verdicts: Array.from({ length: n }, (_, i) => ({ i, ok: !reject.includes(i), ...(reject.includes(i) ? { reason: "wrong" } : {}) })) });
+/** Mock model: the first call writes cards, the second checks them. */
+function twoStepModel(cardsText: string, checkText: string) {
+  return vi.fn(async (_url: string, init: RequestInit) => {
+    const body = JSON.parse(init.body as string);
+    const isCheck = String(body.messages[0].content).includes("checking revision cards");
+    return new Response(sseBody([isCheck ? checkText : cardsText]), { status: 200 });
+  });
+}
 const quizBody = JSON.stringify({ code: "0606", topicId: "series", count: 10 });
 
 afterEach(() => vi.unstubAllGlobals());
@@ -85,6 +96,14 @@ describe("question validation", () => {
     expect(lopsided.map((x) => x.level)).toEqual([...lopsided.map((x) => x.level)].sort());
   });
 
+  it("reads checker verdicts, treating anything unclear as a reject", () => {
+    expect([...parseVerdicts(verdicts(4, [1]), 4)!].sort()).toEqual([0, 2, 3]);
+    // Missing verdicts, out-of-range indices and non-boolean "ok" don't pass a card.
+    expect([...parseVerdicts('{"verdicts":[{"i":0,"ok":true},{"i":9,"ok":true},{"i":2,"ok":"yes"}]}', 4)!]).toEqual([0]);
+    expect(parseVerdicts("I think they're fine", 4)).toBeNull();
+    expect(parseVerdicts('{"questions":[]}', 4)).toBeNull();
+  });
+
   it("keeps the correct answer when shuffling", () => {
     for (let i = 0; i < 20; i++) {
       const s = shuffleOptions(validateQuestion(q(1))!);
@@ -116,18 +135,24 @@ describe("POST /api/quiz-questions", () => {
   it("generates, validates, banks and counts usage", async () => {
     const env = makeEnv();
     const token = await login(env);
-    const fetchMock = vi.fn(async () => new Response(sseBody(["```json\n", reply(13), "\n```"]), { status: 200 }));
+    const fetchMock = twoStepModel("```json\n" + reply(15) + "\n```", verdicts(15, [2, 7]));
     vi.stubGlobal("fetch", fetchMock);
     const { ctx } = makeCtx();
     const res = await worker.fetch(req("/api/quiz-questions", { method: "POST", token, body: quizBody }), env as never, ctx);
     expect(res.status).toBe(200);
-    const data = (await res.json()) as { questions: Array<{ options: string[]; answer: number }>; source: string };
+    const data = (await res.json()) as { questions: Array<{ q: string; options: string[]; answer: number }>; source: string };
     expect(data.source).toBe("new");
     expect(data.questions).toHaveLength(10);
     for (const x of data.questions) expect(x.options[x.answer]).toMatch(/^right/);
+    // Rejected cards are never served or saved.
+    const rejected = ["Question number 2?", "Question number 7?"];
+    expect(data.questions.some((x) => rejected.includes(x.q))).toBe(false);
 
     const kv = env.TUTOR_KV as unknown as MemoryKV;
-    expect(JSON.parse(kv.store.get(bankKey("0606", null, "series"))!.value)).toHaveLength(13);
+    const banked = JSON.parse(kv.store.get(bankKey("0606", null, "series"))!.value) as Array<{ q: string }>;
+    expect(banked).toHaveLength(13);
+    expect(banked.some((x) => rejected.includes(x.q))).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     const usageKey = [...kv.store.keys()].find((k) => k.startsWith("usage:"))!;
     expect(JSON.parse(kv.store.get(usageKey)!.value).requests).toBe(1);
 
@@ -136,6 +161,18 @@ describe("POST /api/quiz-questions", () => {
     expect(sent.messages[0].content).toContain("Series");
     expect(sent.messages[0].content).toContain("ONLY this JSON");
     expect(sent.messages[0].content).toContain("flashcards");
+  });
+
+  it("serves unchecked cards once but never saves them if the checker reply is unusable", async () => {
+    const env = makeEnv();
+    const token = await login(env);
+    vi.stubGlobal("fetch", twoStepModel(reply(15), "Looks good to me!"));
+    const { ctx } = makeCtx();
+    const res = await worker.fetch(req("/api/quiz-questions", { method: "POST", token, body: quizBody }), env as never, ctx);
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { questions: unknown[] }).questions).toHaveLength(10);
+    const kv = env.TUTOR_KV as unknown as MemoryKV;
+    expect(kv.store.get(bankKey("0606", null, "series"))).toBeUndefined();
   });
 
   it("returns 502 when the model's reply is unusable", async () => {

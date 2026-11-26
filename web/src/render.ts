@@ -13,7 +13,7 @@ marked.setOptions({ gfm: true, breaks: true });
 const TOKEN =
   /(```[\s\S]*?(?:```|$)|`[^`\n]+`)|\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|(?<![\\$\w])\$(?!\s)([^$\n]+?)(?<!\s)\$(?![\d$])/g;
 
-export function renderMarkdown(src: string): string {
+export function renderMarkdown(src: string, inline = false): string {
   const maths: string[] = [];
   const protectedSrc = src.replace(TOKEN, (match, code, dbl, brk, paren, inline) => {
     if (code) return code;
@@ -28,7 +28,8 @@ export function renderMarkdown(src: string): string {
     maths.push(html);
     return `KATEXPLACEHOLDER${maths.length - 1}END`;
   });
-  const html = DOMPurify.sanitize(marked.parse(protectedSrc, { async: false }) as string, {
+  const parsed = inline ? marked.parseInline(protectedSrc, { async: false }) : marked.parse(protectedSrc, { async: false });
+  const html = DOMPurify.sanitize(parsed as string, {
     USE_PROFILES: { html: true },
   });
   return html.replace(/KATEXPLACEHOLDER(\d+)END/g, (_, i) => DOMPurify.sanitize(maths[Number(i)], {

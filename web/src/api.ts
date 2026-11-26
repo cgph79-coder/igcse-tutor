@@ -56,6 +56,29 @@ export async function getJson<T>(path: string, token: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export interface McqQuestion {
+  q: string;
+  options: string[];
+  answer: number;
+  explain: string;
+  /** 1 = essentials, 2 = finer detail, 3 = precise distinctions. */
+  level?: 1 | 2 | 3;
+}
+
+/** A batch of multiple-choice questions for the arcade games. */
+export async function fetchQuizQuestions(
+  token: string,
+  req: { code: string; topicId: string; tier: string | null; count: number },
+): Promise<McqQuestion[]> {
+  const res = await fetch(WORKER_URL + "/api/quiz-questions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw await errorFrom(res);
+  return ((await res.json()) as { questions: McqQuestion[] }).questions;
+}
+
 /** Send a chat request and call onDelta as the reply streams in. */
 export async function streamChat(
   token: string,

@@ -43,6 +43,10 @@ Next: Lane runner, Defend the base, Speed tiles (each a new `StartGame` in `web/
 
 **Done when:** he can run focus/break cycles on his phone that keep correct time across app switches, with alerts at each change and focus time shown in Progress.
 
+**Status (Nov 2026): built.** ⏱ in the header opens the timer (`web/src/pomodoro.ts`; timing logic in `pomodoro-core.ts` with tests in `web/test/`). It stores the end time, so it catches up after app switches and reloads, starting the break from when the focus really ended. A slim bar under the header shows phase, topic and countdown in every view. Alerts: on-screen message, a short chime, vibration, and a browser notification if allowed. Settings for lengths, sound and vibration. At the end of a break it offers "Start focus" or a recall round in the Arcade. Completed blocks are kept on the device and shown in Progress (today, this week, per subject).
+Limits: phones pause web pages in the background, so the chime and notification fire when he comes back to the app, not exactly on time, unless the tab is still running. A true background alarm would need the app installed as a PWA with push notifications.
+Next (optional): focus time per day in the parent view (needs the Worker to receive daily totals, never message content).
+
 ## 3. Student onboarding: subjects, exam year and syllabus updates
 
 **Goal:** when a student first opens the app, they choose their subjects and exam session (e.g. June 2027), and the app makes sure the matching syllabus versions are in place and stay current.

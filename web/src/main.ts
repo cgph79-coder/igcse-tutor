@@ -6,6 +6,7 @@ import { extractScore, renderMarkdown } from "./render";
 import { LocalProgressStore, prefs, type ProgressStore } from "./storage";
 import { applyTheme, el, initTheme, nextTheme } from "./ui";
 import { startUpdateCheck } from "./update-check";
+import { formatDuration, initPomodoro, timerBar, timerButton } from "./pomodoro";
 import { ACCEPT, MAX_PHOTOS, onAttachmentWarning, readAttachment, type Attachment } from "./attachments";
 
 type Mode = "learn" | "practise" | "mark" | "quiz";
@@ -180,22 +181,23 @@ function appView() {
   });
 
   const header = el("header", { class: "top" },
-    el("h1", {}, "IGCSE ", el("span", {}, "Tutor")),
-    newBtn, arcadeBtn, progressBtn, themeBtn,
+    el("h1", {}, el("span", { class: "brand-long" }, "IGCSE "), el("span", {}, "Tutor")),
+    newBtn, arcadeBtn, progressBtn, timerButton(), themeBtn,
   );
+  const bar = timerBar();
 
   if (state.view === "arcade") {
     const panel = el("section", { class: "panel arcade" }, el("p", { class: "meta" }, "Loading…"));
     openArcade(panel);
-    return el("div", { class: "app" }, header, panel);
+    return el("div", { class: "app" }, header, bar, panel);
   }
 
   if (state.view === "progress") {
     const panel = el("section", { class: "panel" }, el("p", { class: "meta" }, "Loading…"));
     renderProgress(panel);
-    return el("div", { class: "app" }, header, panel);
+    return el("div", { class: "app" }, header, bar, panel);
   }
-  return el("div", { class: "app" }, header, setupView(), chatView(), composerView());
+  return el("div", { class: "app" }, header, bar, setupView(), chatView(), composerView());
 }
 
 function setupView() {
@@ -616,10 +618,32 @@ async function openArcade(panel: HTMLElement) {
 }
 
 async function renderProgress(panel: HTMLElement) {
-  const [all, weak] = await Promise.all([store.all(), store.weakest(5)]);
+  const [all, weak, focus] = await Promise.all([store.all(), store.weakest(5), store.focusLog()]);
   panel.replaceChildren();
 
-  panel.append(el("h2", {}, "Weak topics"));
+  panel.append(el("h2", {}, "Focus time"));
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfWeek.getDate() - ((startOfWeek.getDay() + 6) % 7)); // Monday
+  const since = (d: Date) => focus.filter((r) => new Date(r.at) >= d);
+  const sum = (rs: typeof focus) => rs.reduce((n, r) => n + r.minutes, 0);
+  const today = since(startOfToday);
+  const week = since(startOfWeek);
+  if (focus.length === 0) {
+    panel.append(el("p", { class: "meta" }, "No focus blocks yet. Tap ⏱ at the top to start a 25-minute focus block."));
+  } else {
+    const bySubject = new Map<string, number>();
+    for (const r of week) bySubject.set(r.subject, (bySubject.get(r.subject) ?? 0) + r.minutes);
+    panel.append(el("div", { class: "card" },
+      el("strong", {}, `${today.length} focus block${today.length === 1 ? "" : "s"} today · ${formatDuration(sum(today))}`),
+      el("div", { class: "meta" }, `This week: ${week.length} block${week.length === 1 ? "" : "s"} · ${formatDuration(sum(week))}`),
+      ...[...bySubject].sort((a, b) => b[1] - a[1]).map(([subject, mins]) => el("div", { class: "meta" }, `${subject}: ${formatDuration(mins)}`)),
+    ));
+  }
+
+  panel.append(el("h2", { style: "margin-top:24px" }, "Weak topics"));
+
   if (weak.length === 0) {
     panel.append(el("p", { class: "meta" }, "No scores yet. Try Practise, Quick quiz or the Arcade — your marks will show here."));
   }
@@ -671,6 +695,22 @@ async function renderProgress(panel: HTMLElement) {
 }
 
 restoreConversation();
+initPomodoro({
+  store,
+  currentTopic() {
+    const s = syllabus();
+    ensureTopic();
+    const found = findTopic(s, state.topicId);
+    return found ? { code: s.code, subject: s.subject, topicId: found.topic.id, topicTitle: found.topic.title } : null;
+  },
+  openArcade(code, topicId) {
+    state.code = code;
+    state.topicId = topicId;
+    state.view = "arcade";
+    savePrefs();
+    render();
+  },
+});
 render();
 startUpdateCheck(
   () => !state.busy && state.messages.length === 0 && state.attachments.length === 0 && !(textarea?.value ?? "").trim(),

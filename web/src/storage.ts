@@ -20,15 +20,30 @@ export interface TopicProgress {
   scores: ScoreRecord[];
 }
 
+/** One completed Pomodoro focus block. */
+export interface FocusRecord {
+  at: string;
+  minutes: number;
+  code: string;
+  subject: string;
+  topicId: string;
+  topicTitle: string;
+}
+
 export interface ProgressStore {
   recordStudy(p: { code: string; topicId: string; topicTitle: string; subject: string }): Promise<void>;
   recordScore(p: { code: string; topicId: string; topicTitle: string; subject: string; mode: string; got: number; max: number }): Promise<void>;
   all(): Promise<TopicProgress[]>;
   weakest(limit?: number): Promise<Array<TopicProgress & { average: number }>>;
+  recordFocus(r: FocusRecord): Promise<void>;
+  /** Focus blocks, oldest first (the last ~120 days). */
+  focusLog(): Promise<FocusRecord[]>;
   clear(): Promise<void>;
 }
 
 const KEY = "igcse-tutor:progress:v1";
+const FOCUS_KEY = "igcse-tutor:focus:v1";
+const FOCUS_KEEP_DAYS = 120;
 
 export class LocalProgressStore implements ProgressStore {
   private read(): Record<string, TopicProgress> {
@@ -88,8 +103,34 @@ export class LocalProgressStore implements ProgressStore {
       .slice(0, limit);
   }
 
+  async recordFocus(r: FocusRecord) {
+    const cutoff = new Date(Date.now() - FOCUS_KEEP_DAYS * 86400000).toISOString();
+    const log = (await this.focusLog()).filter((x) => x.at >= cutoff);
+    if (log.some((x) => x.at === r.at)) return; // already recorded (e.g. by another open tab)
+    log.push(r);
+    try {
+      localStorage.setItem(FOCUS_KEY, JSON.stringify(log));
+    } catch {
+      /* storage full or blocked */
+    }
+  }
+
+  async focusLog(): Promise<FocusRecord[]> {
+    try {
+      const log = JSON.parse(localStorage.getItem(FOCUS_KEY) ?? "[]");
+      return Array.isArray(log) ? log.filter((x) => typeof x?.at === "string" && typeof x?.minutes === "number") : [];
+    } catch {
+      return [];
+    }
+  }
+
   async clear() {
-    localStorage.removeItem(KEY);
+    try {
+      localStorage.removeItem(KEY);
+      localStorage.removeItem(FOCUS_KEY);
+    } catch {
+      /* ignore */
+    }
   }
 }
 

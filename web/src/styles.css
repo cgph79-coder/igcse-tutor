@@ -51,11 +51,17 @@ header.top {
 }
 header.top h1 { font-size: 17px; margin: 0; flex: 1; letter-spacing: -0.01em; }
 header.top h1 span { color: var(--accent); }
+header.top h1 span.brand-long { color: inherit; }
 header.top h1 { white-space: nowrap; }
 @media (max-width: 420px) {
   header.top { gap: 6px; padding-left: 12px; padding-right: 12px; }
   header.top h1 { font-size: 16px; }
   header.top .icon-btn { padding: 6px 8px; font-size: 13px; }
+}
+@media (max-width: 400px) {
+  header.top { gap: 5px; }
+  header.top h1 .brand-long { display: none; }
+  header.top .icon-btn { padding: 6px 7px; }
 }
 .icon-btn {
   border: 1px solid var(--border); background: var(--surface); border-radius: 10px;
@@ -294,3 +300,48 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   .arcade-field.shake, .loader-rock { animation: none; }
 }
+
+/* ---- study timer ---- */
+.timer-btn { min-width: 36px; }
+.pomo-bar {
+  display: block; width: 100%; border: none; border-bottom: 1px solid var(--border); background: var(--accent-soft);
+  color: var(--text); font-size: 13px; font-weight: 600; padding: 5px 16px; text-align: center;
+  font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pomo-bar.break { background: var(--warn-bg); }
+.pomo-panel {
+  width: min(420px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text);
+  padding: 20px 18px 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25); text-align: center;
+}
+.pomo-panel::backdrop { background: rgba(0, 0, 0, 0.35); }
+.pomo-panel h2 { margin: 0; font-size: 18px; }
+.pomo-close {
+  position: absolute; top: 8px; right: 10px; border: none; background: none; font-size: 24px; line-height: 1;
+  color: var(--muted); width: 36px; height: 36px;
+}
+.pomo-clock { font-size: 56px; font-weight: 800; letter-spacing: -0.02em; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.15; margin: 6px 0 2px; }
+.pomo-clock.break { color: #c7862a; }
+.pomo-topic { margin: 0; color: var(--muted); font-size: 14px; }
+.pomo-tip { margin: 8px 0 0; font-size: 14px; background: var(--warn-bg); border-radius: 10px; padding: 8px 10px; }
+.pomo-dots { display: flex; justify-content: center; gap: 8px; margin: 14px 0; }
+.pomo-dots span { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--accent); }
+.pomo-dots span.on { background: var(--accent); }
+.pomo-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.pomo-actions button { min-height: 44px; }
+.pomo-panel > .meta { font-size: 13px; color: var(--muted); margin: 12px 0 0; }
+.pomo-settings { text-align: left; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+.pomo-settings summary { cursor: pointer; color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.pomo-settings-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.pomo-settings label.check { margin-bottom: 6px; }
+.pomo-settings .meta { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+.pomo-toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 50;
+  width: min(420px, calc(100% - 32px)); background: var(--surface); color: var(--text); border: 1px solid var(--accent);
+  border-radius: var(--radius); padding: 12px 40px 12px 14px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+.pomo-toast p { margin: 4px 0 0; font-size: 14px; }
+.pomo-toast-close { position: absolute; top: 6px; right: 6px; border: none; background: none; font-size: 22px; color: var(--muted); width: 32px; height: 32px; }
+.pomo-toast-actions { display: flex; gap: 8px; margin-top: 10px; }
+.pomo-toast-actions button { border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: 14px; }
+.pomo-toast-actions button:first-child { background: var(--accent); color: var(--accent-text); }

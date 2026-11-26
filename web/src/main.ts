@@ -8,6 +8,7 @@ import { applyTheme, el, initTheme, nextTheme } from "./ui";
 import { startUpdateCheck } from "./update-check";
 import { formatDuration, initPomodoro, timerBar, timerButton } from "./pomodoro";
 import { installCard, registerServiceWorker } from "./install";
+import { flushFocus, queueFocus, startFocusSync } from "./focus-sync";
 import { ACCEPT, MAX_PHOTOS, onAttachmentWarning, readAttachment, type Attachment } from "./attachments";
 
 type Mode = "learn" | "practise" | "mark" | "quiz";
@@ -150,6 +151,7 @@ function loginView() {
       state.token = await login("/api/login", { passcode: input.value });
       prefs.set("token", state.token);
       render();
+      void flushFocus(state.token);
     } catch (ex) {
       err.textContent = ex instanceof Error ? ex.message : "Couldn't log in.";
     } finally {
@@ -715,7 +717,12 @@ initPomodoro({
     savePrefs();
     render();
   },
+  onFocusRecorded(r) {
+    queueFocus(r);
+    void flushFocus(state.token);
+  },
 });
+startFocusSync(() => state.token);
 render();
 startUpdateCheck(
   () => !state.busy && state.messages.length === 0 && state.attachments.length === 0 && !(textarea?.value ?? "").trim(),

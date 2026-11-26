@@ -285,6 +285,13 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .rock-formation.landed .rock:not(.reveal) { opacity: 0.3; }
 .rock .katex { font-size: 1em; }
 .arcade-question .katex { font-size: 1.05em; }
+.arcade-question { position: relative; }
+.read-bar { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: transparent; }
+.read-bar > div {
+  height: 100%; width: 0; background: var(--accent);
+  animation: read-fill var(--read-ms, 3000ms) linear var(--read-delay, 0ms) forwards;
+}
+@keyframes read-fill { to { width: 100%; } }
 
 .results-head { text-align: center; display: grid; gap: 4px; justify-items: center; margin-top: 8px; }
 .results-head h2 { margin: 0; }
@@ -350,3 +357,10 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .install-card { border-color: var(--accent); background: var(--accent-soft); }
 .install-card p { margin: 6px 0 0; }
 .install-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+
+/* ---- parent: focus time ---- */
+.focus-card { display: grid; gap: 4px; }
+.panel > p.meta { font-size: 13px; color: var(--muted); }
+.focus-day { margin-top: 8px; }
+.focus-day-head { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.focus-day .bar { margin-top: 4px; }

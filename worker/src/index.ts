@@ -13,7 +13,7 @@
 import { bearer, checkSecret, issueToken, verifyToken, type Role, type TokenPayload } from "./auth";
 import { num, type Env } from "./env";
 import { hasImages, keepLatestImages, sanitizeMessages, trimHistory } from "./history";
-import { callLlm, readOpenAiStream, textTarget, toLlmMessage, visionTarget, type LlmMessage } from "./llm";
+import { callLlm, describeError, readOpenAiStream, textTarget, toLlmMessage, visionTarget, type LlmMessage } from "./llm";
 import { appendToLog, listLogs, SESSION_ID, type LogMessage } from "./logs";
 import { parseBlockedTerms, stripPii } from "./pii";
 import { buildSystemPrompt, COMMAND_WORDS, type CommandWord, type Difficulty, type Mode } from "./prompts/tutor";
@@ -222,8 +222,8 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
     return json(request, env, { error: "The tutor service couldn't be reached. Please try again in a moment." }, 502);
   }
   if (!upstream.ok || !upstream.body) {
-    // Don't echo provider error bodies (they can contain account details).
-    console.log(`LLM error status ${upstream.status}`);
+    // Log only the provider's short error message; never show it to the student.
+    console.log(`LLM error model=${target.model} ${await describeError(upstream)}`);
     const msg =
       upstream.status === 401 || upstream.status === 402
         ? "The tutor isn't set up correctly (API key or credit). Please ask a parent to check."

@@ -71,6 +71,34 @@ describe("photo uploads", () => {
     expect(log).not.toContain("base64");
   });
 
+  it("retries without the reasoning setting if the provider rejects it", async () => {
+    const env = visionEnv();
+    const token = await login(env);
+    const bodies: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        const b = JSON.parse(init.body as string);
+        bodies.push(b);
+        if (b.reasoning?.enabled === false)
+          return new Response(JSON.stringify({ error: { message: "Reasoning is mandatory for this endpoint" } }), { status: 400 });
+        return new Response(sseBody(["Marked"]), { status: 200 });
+      }),
+    );
+    const { ctx, settle } = makeCtx();
+    const res = await worker.fetch(
+      req("/api/chat", { method: "POST", token, body: body([{ role: "user", content: "Mark", images: [IMG] }]) }),
+      env as never,
+      ctx,
+    );
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("Marked");
+    await settle();
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1].reasoning).toEqual({ max_tokens: 1024, exclude: true });
+    expect(bodies[1].max_tokens).toBe(3024);
+  });
+
   it("reports an empty reply as an error instead of a blank message", async () => {
     const env = visionEnv();
     const token = await login(env);

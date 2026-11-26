@@ -45,32 +45,61 @@ export function toLlmMessage(m: ChatMessage): LlmMessage {
   };
 }
 
+/** Short, safe description of a provider error for the logs (no request content, no account details). */
+export async function describeError(res: Response): Promise<string> {
+  try {
+    const j = (await res.clone().json()) as { error?: { message?: string; code?: string | number } };
+    return `${res.status} ${String(j.error?.message ?? j.error?.code ?? "").slice(0, 160)}`.trim();
+  } catch {
+    return String(res.status);
+  }
+}
+
+/**
+ * Call the model. On OpenRouter, hidden "thinking" is switched off so the whole allowance goes on
+ * the visible reply. Some models refuse that setting, so we fall back to capping the thinking
+ * (and adding that budget on top), and finally to sending no reasoning setting at all.
+ */
 export async function callLlm(target: LlmTarget, messages: LlmMessage[], maxTokens: number): Promise<Response> {
   const url = target.baseUrl.replace(/\/+$/, "") + "/chat/completions";
-  const body: Record<string, unknown> = {
-    model: target.model,
-    messages,
-    max_tokens: maxTokens,
-    temperature: 0.4,
-    stream: true,
-    stream_options: { include_usage: true },
-  };
-  // On OpenRouter, only use providers that don't store or train on prompts (he's a minor).
-  if (/openrouter\.ai/.test(target.baseUrl)) {
-    body.provider = { data_collection: "deny" };
-    // Thinking models can otherwise spend the whole max_tokens on hidden reasoning and reply with nothing.
-    body.reasoning = { enabled: false };
+  const isOpenRouter = /openrouter\.ai/.test(target.baseUrl);
+  const thinkBudget = 1024;
+  const attempts: Array<{ reasoning?: Record<string, unknown>; max_tokens: number }> = isOpenRouter
+    ? [
+        { reasoning: { enabled: false }, max_tokens: maxTokens },
+        { reasoning: { max_tokens: thinkBudget, exclude: true }, max_tokens: maxTokens + thinkBudget },
+        { max_tokens: maxTokens + 2 * thinkBudget },
+      ]
+    : [{ max_tokens: maxTokens }];
+
+  let res: Response | undefined;
+  for (const [i, attempt] of attempts.entries()) {
+    const body: Record<string, unknown> = {
+      model: target.model,
+      messages,
+      max_tokens: attempt.max_tokens,
+      temperature: 0.4,
+      stream: true,
+      stream_options: { include_usage: true },
+    };
+    // On OpenRouter, only use providers that don't store or train on prompts (he's a minor).
+    if (isOpenRouter) body.provider = { data_collection: "deny" };
+    if (attempt.reasoning) body.reasoning = attempt.reasoning;
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${target.apiKey}`,
+        // Harmless for other providers; OpenRouter uses this to label usage.
+        "X-Title": "IGCSE Tutor",
+      },
+      body: JSON.stringify(body),
+    });
+    // Only a "bad request" is worth retrying with different settings.
+    if (res.ok || (res.status !== 400 && res.status !== 422) || i === attempts.length - 1) break;
+    console.log(`llm attempt ${i + 1} rejected: ${await describeError(res)} — retrying with other reasoning settings`);
   }
-  return fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${target.apiKey}`,
-      // Harmless for other providers; OpenRouter uses this to label usage.
-      "X-Title": "IGCSE Tutor",
-    },
-    body: JSON.stringify(body),
-  });
+  return res!;
 }
 
 export interface StreamResult {

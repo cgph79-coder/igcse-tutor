@@ -10,6 +10,8 @@ import { prefs, type ProgressStore } from "./storage";
 import { el } from "./ui";
 import type { GameInfo, GameResult } from "./games/types";
 import { feedbackButton, openFeedback } from "./feedback";
+import { loadJourney } from "./games/journey-save";
+import { GAME_NAME } from "./games/journey-content";
 
 const ROUND_LENGTH = 10;
 /**
@@ -26,7 +28,18 @@ export const GAMES: GameInfo[] = [
     id: "asteroids",
     name: "Asteroid answers",
     blurb: "Four answer rocks drift towards your base. Blast the right one before they land.",
+    loading: "Building your asteroid field",
     load: () => import("./games/asteroids").then((m) => m.startAsteroids),
+  },
+  {
+    id: "journey",
+    name: GAME_NAME,
+    blurb: "A text adventure. Travel as a newspaper correspondent and check a fact at every stop to get your story on the front page.",
+    subjects: ["0977"],
+    sectors: false,
+    loading: "Packing your bags",
+    hasSave: (code, topicId) => loadJourney(code, topicId) !== null,
+    load: () => import("./games/journey").then((m) => m.startJourney),
   },
 ];
 
@@ -158,26 +171,36 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
     calm.addEventListener("change", () => prefs.set("arcade:calm", calm.checked ? "1" : "0"));
 
     const streak = currentStreak();
-    const cards = GAMES.map((g) => {
+    const cards = GAMES.filter((g) => !g.subjects || g.subjects.includes(s.code)).map((g) => {
       const best = Number(prefs.get(bestKey(g.id, s.code, ctx.topicId)) ?? 0);
       const sector = readSector(g.id, s.code, ctx.topicId);
-      const play = el("button", { type: "button", class: "play-btn" }, "Play");
-      play.addEventListener("click", () => startRound(g));
+      const saved = topic ? g.hasSave?.(s.code, ctx.topicId) : false;
+      const play = el("button", { type: "button", class: "play-btn" }, saved ? "Continue" : "Play");
+      play.addEventListener("click", () => startRound(g, !!saved));
+      let fresh: HTMLElement | null = null;
+      if (saved) {
+        fresh = el("button", { type: "button", class: "link-btn" }, "Start again");
+        fresh.addEventListener("click", () => {
+          if (confirm("Start a new journey? Your saved one will be lost.")) startRound(g, false);
+        });
+      }
+      const progress = g.sectors === false
+        ? (best ? `Best ${best}` : "") + (saved ? `${best ? " · " : ""}journey saved` : "")
+        : `Sector ${sector} of ${MAX_SECTOR}` + (best ? ` · best ${best}` : "") +
+          (sector < MAX_SECTOR ? ` · score ${CLEAR_SCORE * ROUND_LENGTH}+ to move up` : " · top speed");
       return el("div", { class: "card game-card" },
         el("div", { class: "game-card-text" },
           el("strong", {}, g.name),
           el("div", { class: "meta" }, g.blurb),
-          el("div", { class: "meta" },
-            `Sector ${sector} of ${MAX_SECTOR}` + (best ? ` · best ${best}` : "") +
-              (sector < MAX_SECTOR ? ` · score ${CLEAR_SCORE * ROUND_LENGTH}+ to move up` : " · top speed")),
+          progress ? el("div", { class: "meta" }, progress) : null,
         ),
-        play,
+        el("div", { class: "game-card-actions" }, play, fresh),
       );
     });
 
     panel.replaceChildren(...[
       el("h2", {}, "Arcade"),
-      el("p", { class: "meta" }, `Quick-fire recall cards to check you know a topic's key facts, best after you've studied it. ${ROUND_LENGTH} cards a round; anything you miss is explained at the end.`),
+      el("p", { class: "meta" }, `Recall cards to check you know a topic's key facts, best after you've studied it. ${ROUND_LENGTH} cards a game; anything you miss is explained at the end.`),
       el("div", { class: "arcade-pick" },
         el("label", { class: "field" }, "Subject", subjectSel),
         el("label", { class: "field" }, "Topic", topicSel),
@@ -190,20 +213,22 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
     ].filter((n): n is HTMLElement => n !== null));
   }
 
-  async function startRound(game: GameInfo) {
+  async function startRound(game: GameInfo, resume = false) {
     const s = syllabus();
     const found = findTopic(s, ctx.topicId);
     if (!found) return;
     panel.replaceChildren(el("div", { class: "arcade-loading", role: "status" },
       el("div", { class: "loader-rock", "aria-hidden": "true" }),
-      el("p", {}, `Building your asteroid field for ${found.topic.title}…`),
+      el("p", {}, `${game.loading ?? "Getting ready"} for ${found.topic.title}…`),
     ));
 
     let questions: McqQuestion[];
     let start;
     try {
       [questions, start] = await Promise.all([
-        fetchQuizQuestions(ctx.token, { code: s.code, topicId: found.topic.id, tier: tierFor(s), count: ROUND_LENGTH }),
+        // A saved run already holds its cards.
+        resume ? Promise.resolve([]) :
+          fetchQuizQuestions(ctx.token, { code: s.code, topicId: found.topic.id, tier: tierFor(s), count: ROUND_LENGTH }),
         game.load(),
       ]);
     } catch (ex) {
@@ -220,7 +245,7 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
     }
     if (!alive) return;
 
-    ctx.store.recordStudy({ code: s.code, topicId: found.topic.id, topicTitle: found.topic.title, subject: s.subject });
+    if (!resume) ctx.store.recordStudy({ code: s.code, topicId: found.topic.id, topicTitle: found.topic.title, subject: s.subject });
     const stage = el("div", { class: "arcade-stage" });
     panel.replaceChildren(stage);
     stopGame = start(stage, {
@@ -228,9 +253,15 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
       calm: calmMode(),
       reducedMotion: prefersReducedMotion(),
       speed: Math.pow(SECTOR_SPEED, readSector(game.id, s.code, found.topic.id) - 1),
+      topic: { code: s.code, sectionId: found.section.id, topicId: found.topic.id, topicTitle: found.topic.title },
+      resume,
       onEnd: (r) => {
         stopGame = null;
         results(game, r);
+      },
+      onExit: () => {
+        stopGame = null;
+        lobby();
       },
     });
   }
@@ -256,7 +287,9 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
       }
       streak = bumpStreak();
       const sector = readSector(game.id, s.code, found.topic.id);
-      if (!r.quit && total >= ROUND_LENGTH && got / total >= CLEAR_SCORE) {
+      if (game.sectors === false) {
+        /* story games have no speed sectors */
+      } else if (!r.quit && total >= ROUND_LENGTH && got / total >= CLEAR_SCORE) {
         if (sector < MAX_SECTOR) {
           prefs.set(sectorKey(game.id, s.code, found.topic.id), String(sector + 1));
           sectorNote = `Sector ${sector} cleared! Sector ${sector + 1} is faster.`;
@@ -308,14 +341,15 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
 
     panel.replaceChildren(
       el("div", { class: "results-head" },
-        el("h2", {}, r.quit ? "Round ended" : "Round over"),
+        el("h2", {}, r.title ?? (r.quit ? "Round ended" : "Round over")),
+        r.summary ? el("p", { class: "results-summary" }, r.summary) : null,
         el("div", { class: "results-score" }, String(r.score)),
         el("div", { class: "meta" }, `${got}/${total} correct · best streak ${r.bestStreak}` + (streak ? ` · 🔥 ${streak}-day streak` : "")),
         newBest ? el("div", { class: "score-chip" }, "New personal best!") : null,
         sectorNote ? el("div", { class: "meta" }, sectorNote) : null,
       ),
       el("div", { class: "results-actions" }, again, back),
-      wrong.length ? el("h2", { style: "margin-top:20px" }, "Worth another look") : el("p", {}, total ? "Perfect round — nothing to fix! 🎉" : ""),
+      wrong.length ? el("h2", { style: "margin-top:20px" }, "Worth another look") : el("p", {}, total ? `Perfect ${game.sectors === false ? "run" : "round"}, nothing to fix! 🎉` : ""),
       wrong.length ? el("p", { class: "meta" }, "Missing a few is normal; these are the cards that make the round worth playing.") : "",
       ...review,
       el("p", { class: "meta feedback-line" }, "Something not right, or an idea for the game? ",

@@ -1,0 +1,20 @@
+{
+  "name": "igcse-tutor-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dompurify": "^3.5.0",
+    "katex": "^0.19.1",
+    "marked": "^18.3.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "^8.4.0"
+  }
+}

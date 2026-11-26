@@ -6,10 +6,13 @@
  *   POST /api/chat                  stream a tutor reply (SSE)
  *   POST /api/quiz-questions        { code, topicId, tier, count } → { questions } (arcade games)
  *   POST /api/focus                 { blocks: [{ at, minutes, code }] } → { saved } (study timer)
+ *   POST /api/feedback              { area, text, context? } → { ok } (in-app feedback)
  *   GET  /api/usage                 today's usage for the student
  *   POST /api/parent/login          { password }  → { token }   (parent)
  *   GET  /api/parent/sessions       list session logs
  *   GET  /api/parent/session?key=…  one session log
+ *   GET  /api/parent/feedback       in-app feedback, newest first
+ *   POST /api/parent/feedback/done  { id } → remove one feedback item (once it's in the log)
  *   GET  /api/health
  */
 import { bearer, checkSecret, issueToken, verifyToken, type Role, type TokenPayload } from "./auth";
@@ -30,6 +33,7 @@ import {
 } from "./ratelimit";
 import { assessSafety, HIGH_RISK_REPLY } from "./safety";
 import { cleanBlocks, getFocusDays, recordFocusBlocks } from "./focus";
+import { deleteFeedback, listFeedback, saveFeedback } from "./feedback";
 import {
   addToBank,
   bankKey,
@@ -385,6 +389,34 @@ async function handleFocus(request: Request, env: Env): Promise<Response> {
   return json(request, env, { saved });
 }
 
+/** A short note about the app from the student, for the parent view and the feedback log. */
+async function handleFeedback(request: Request, env: Env): Promise<Response> {
+  const user = await requireRole(request, env, "student");
+  if (!user) return json(request, env, { error: "Please log in again." }, 401);
+  const body = await readJson(request);
+  if (!body) return json(request, env, { error: "Bad request." }, 400);
+  const result = await saveFeedback(
+    env.TUTOR_KV,
+    user.sub,
+    { area: body.area, text: body.text, context: body.context },
+    parseBlockedTerms(env.BLOCKED_TERMS),
+    num(env.LOG_RETENTION_DAYS, 90),
+  );
+  return result.ok ? json(request, env, { ok: true }) : json(request, env, { error: result.error }, result.status);
+}
+
+async function handleParentFeedback(request: Request, env: Env): Promise<Response> {
+  if (!(await requireRole(request, env, "parent"))) return json(request, env, { error: "Please log in." }, 401);
+  return json(request, env, { feedback: await listFeedback(env.TUTOR_KV) });
+}
+
+async function handleParentFeedbackDone(request: Request, env: Env): Promise<Response> {
+  if (!(await requireRole(request, env, "parent"))) return json(request, env, { error: "Please log in." }, 401);
+  const body = await readJson(request);
+  const ok = await deleteFeedback(env.TUTOR_KV, String(body?.id ?? ""));
+  return ok ? json(request, env, { ok: true }) : json(request, env, { error: "Bad id." }, 400);
+}
+
 async function handleUsage(request: Request, env: Env): Promise<Response> {
   const user = await requireRole(request, env, "student");
   if (!user) return json(request, env, { error: "Please log in again." }, 401);
@@ -444,6 +476,12 @@ export default {
           return await handleChat(request, env, ctx);
         case "POST /api/quiz-questions":
           return await handleQuizQuestions(request, env);
+        case "POST /api/feedback":
+          return await handleFeedback(request, env);
+        case "GET /api/parent/feedback":
+          return await handleParentFeedback(request, env);
+        case "POST /api/parent/feedback/done":
+          return await handleParentFeedbackDone(request, env);
         case "POST /api/focus":
           return await handleFocus(request, env);
         case "GET /api/usage":

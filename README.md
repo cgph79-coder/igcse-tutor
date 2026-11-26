@@ -22,6 +22,7 @@ Phone / browser ──► GitHub Pages (web/)  ──►  Cloudflare Worker (wor
 - Before any message reaches the AI, the Worker removes emails, phone numbers, addresses, postcodes, self-introduced names and any words you list in `BLOCKED_TERMS`.
 - Clear self-harm or abuse messages get a fixed, kind reply with Childline (0800 1111) and are never sent to the AI. They're flagged in the parent view.
 - The parent view also shows study-timer time per day and per subject. Only the time, length and subject of each finished focus block is sent, never anything he typed.
+- In-app feedback (from Progress and the Arcade results screen) goes through the same privacy filter and appears in the parent view. It can include app details (version, screen, topic), but never the conversation.
 
 ```
 igcse-tutor/

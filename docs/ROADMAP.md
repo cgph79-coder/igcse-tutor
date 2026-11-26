@@ -9,11 +9,20 @@ Quick fixes from using the app. **Check this first at the start of each work ses
 | # | Date | From | Area | Feedback | Size | Status |
 |---|------|------|------|----------|------|--------|
 | F1 | 2026-11-26 | Student (via parent) | Arcade | Not enough time to read the question before the rocks start falling. | S | done: reading pause of 2–6 s with a progress bar (PR #4) |
-| F2 | 2026-11-26 | Card review | Arcade cards | 2 wrong and 2 weak History cards out of 26 (see "Card quality" below). | M | doing: 4 cards removed from the live bank; checking pass on branch `check-arcade-cards` |
+| F2 | 2026-11-26 | Card review | Arcade cards | 2 wrong and 2 weak History cards out of 26 (see "Card quality" below). | M | done: 4 cards removed from the live bank; every new batch is now checked before use (PR #5) |
 
 **Adding feedback:** add a row with the next number. Write what happened in the user's words, not the fix. Keep fixed items for a month, then move them to the bottom of this file's history (git keeps the rest).
 
-**Planned: in-app "Send feedback" (size M).** A small "Feedback" link in Progress and on the Arcade results screen. It has an area picker (Tutor, Arcade, Timer, Other), a one-line box and an optional "this happened just now" tick that attaches the app version, screen and topic (never the conversation). It sends to `POST /api/feedback` (KV, privacy-filtered, daily cap). The parent view shows a **Feedback** list with a "Copy as log row" button, so new items can be pasted straight into the table above.
+**In-app feedback (built, Nov 2026).** He can send feedback from:
+- a "Send feedback" card on Progress;
+- a link at the bottom of the Arcade results screen;
+- a **Report this card** link on every missed card. This opens the form with the card and its marked answer already filled in.
+
+The form has an area (Tutor, Arcade, Timer, Other), up to 500 characters, and a "This happened just now" tick, on by default, that attaches the app version, screen, subject, topic and game. It never attaches the conversation.
+
+It goes to `POST /api/feedback` (`worker/src/feedback.ts`): the same privacy filter as chat, wellbeing/safeguarding words flagged for the parent, 20 per day, kept for the log retention period. The parent view's **Feedback** list shows each item with **Copy as log row** (a ready-made row for the table above) and **Done** (removes it once it's in the log).
+
+**Routine:** open the parent view → copy new items into this table (give each the next F-number, a size and a status) → press Done.
 
 ## 1. Arcade-style quiz games
 

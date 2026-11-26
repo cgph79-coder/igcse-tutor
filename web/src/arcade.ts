@@ -9,6 +9,7 @@ import { renderMarkdown } from "./render";
 import { prefs, type ProgressStore } from "./storage";
 import { el } from "./ui";
 import type { GameInfo, GameResult } from "./games/types";
+import { feedbackButton, openFeedback } from "./feedback";
 
 const ROUND_LENGTH = 10;
 /**
@@ -284,13 +285,24 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
           `I got this wrong in a revision game: "${plain(q.q)}" I said "${a.chosen === null ? "(ran out of time)" : plain(q.options[a.chosen])}" ` +
             `but the answer was "${plain(q.options[q.answer])}". Can you help me understand why?`);
       });
+      const plainText = (t: string) => t.replace(/\$/g, "");
+      const report = el("button", { type: "button", class: "link-btn" }, "Report this card");
+      report.addEventListener("click", () =>
+        openFeedback({
+          token: ctx.token,
+          area: "arcade",
+          context: { view: "arcade-results", code: s.code, topic: found?.topic.title, game: game.name },
+          text: `This card looks wrong: "${plainText(q.q)}" (marked answer: ${plainText(q.options[q.answer])}). Because: `,
+          onAuthLost: ctx.onAuthLost,
+        }),
+      );
       return el("div", { class: "card review-card" },
         inline(q.q, "div", "review-q"),
         el("div", { class: "review-line bad" }, "Your answer: ",
           a.chosen === null ? el("em", {}, "ran out of time") : inline(q.options[a.chosen])),
         el("div", { class: "review-line good" }, "Correct: ", inline(q.options[q.answer])),
         q.explain ? inline(q.explain, "div", "meta") : null,
-        learn,
+        el("div", { class: "review-actions" }, learn, report),
       );
     });
 
@@ -306,6 +318,13 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
       wrong.length ? el("h2", { style: "margin-top:20px" }, "Worth another look") : el("p", {}, total ? "Perfect round — nothing to fix! 🎉" : ""),
       wrong.length ? el("p", { class: "meta" }, "Missing a few is normal; these are the cards that make the round worth playing.") : "",
       ...review,
+      el("p", { class: "meta feedback-line" }, "Something not right, or an idea for the game? ",
+        feedbackButton("Send feedback", () => ({
+          token: ctx.token,
+          area: "arcade",
+          context: { view: "arcade-results", code: s.code, topic: found?.topic.title, game: game.name },
+          onAuthLost: ctx.onAuthLost,
+        }))),
     );
   }
 

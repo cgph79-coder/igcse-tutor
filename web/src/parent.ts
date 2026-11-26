@@ -1,6 +1,7 @@
 import "katex/dist/katex.min.css";
 import "./styles.css";
 import { getJson, login, ApiError } from "./api";
+import { WORKER_URL } from "./config";
 import { renderMarkdown } from "./render";
 import { el, initTheme } from "./ui";
 import { startUpdateCheck } from "./update-check";
@@ -27,6 +28,15 @@ interface SessionsResponse {
   usageToday: { requests: number; tokens: number };
   limits: { requests: number; tokens: number };
   retentionDays: number;
+}
+interface FeedbackItem {
+  id: string;
+  at: string;
+  area: "tutor" | "arcade" | "timer" | "other";
+  text: string;
+  context?: { build?: string; view?: string; code?: string; subject?: string; topic?: string; game?: string };
+  redactions?: string[];
+  flag?: "wellbeing" | "high";
 }
 interface SessionLog {
   subject: string;
@@ -111,6 +121,7 @@ function showLogin() {
 
 async function showList() {
   const panel = el("section", { class: "panel parent-list" }, el("p", { class: "meta" }, "Loading…"));
+  const feedbackBox = el("div", { class: "feedback-box" });
   shell(panel);
   try {
     const data = await getJson<SessionsResponse>("/api/parent/sessions", token!);
@@ -123,8 +134,10 @@ async function showList() {
             `Logs are kept for ${data.retentionDays} days.`),
       ),
       ...(data.focus ? focusSection(data.focus) : []),
+      feedbackBox,
       el("h2", {}, `Sessions (${data.sessions.length})`),
     );
+    void loadFeedback(feedbackBox);
     const flagged = data.sessions.filter((s) => s.flagged).length;
     if (flagged) panel.append(el("p", { class: "flag" }, `⚠ ${flagged} session(s) flagged for wellbeing or safeguarding.`));
     if (!data.sessions.length) panel.append(el("p", { class: "meta" }, "No sessions yet."));
@@ -180,6 +193,82 @@ function focusSection(days: FocusDay[]): HTMLElement[] {
     card,
     el("p", { class: "meta" }, "Completed focus blocks from the study timer. Blocks done offline appear once his device reconnects."),
   ];
+}
+
+const AREA_LABEL: Record<FeedbackItem["area"], string> = { tutor: "Tutor", arcade: "Arcade", timer: "Timer", other: "Other" };
+
+/** A row for the feedback log table in docs/ROADMAP.md, ready to paste. */
+function logRow(f: FeedbackItem): string {
+  const cell = (t: string) => t.replace(/\|/g, "\\|").replace(/\s+/g, " ").trim();
+  const where = [f.context?.subject, f.context?.topic, f.context?.game].filter(Boolean).join(" · ");
+  const area = AREA_LABEL[f.area] + (where ? ` (${where})` : "");
+  return `| F? | ${f.at.slice(0, 10)} | Student (app) | ${cell(area)} | ${cell(f.text)} | ? | new |`;
+}
+
+async function copy(text: string, button: HTMLElement) {
+  try {
+    await navigator.clipboard.writeText(text);
+    button.textContent = "Copied ✓";
+  } catch {
+    window.prompt("Copy this row:", text);
+  }
+}
+
+async function loadFeedback(box: HTMLElement) {
+  let items: FeedbackItem[];
+  try {
+    items = (await getJson<{ feedback: FeedbackItem[] }>("/api/parent/feedback", token!)).feedback;
+  } catch (ex) {
+    if (ex instanceof ApiError && ex.status === 401) return handleError(ex, box);
+    return box.replaceChildren(); // older Worker without feedback: just leave it out
+  }
+  const flagged = items.filter((f) => f.flag).length;
+  box.replaceChildren(
+    el("h2", {}, `Feedback (${items.length})`),
+    el("p", { class: "meta" },
+      items.length
+        ? "Copy a row into the Feedback log in docs/ROADMAP.md, then press Done to clear it."
+        : "No feedback yet. He can send it from Progress or the Arcade results screen."),
+    flagged ? el("p", { class: "flag" }, `⚠ ${flagged} item(s) mention wellbeing or safety. Please read them.`) : "",
+  );
+  for (const f of items) {
+    const ctx = f.context;
+    const details = [ctx?.subject, ctx?.topic, ctx?.game, ctx?.view && `screen: ${ctx.view}`, ctx?.build && `version ${ctx.build}`]
+      .filter(Boolean)
+      .join(" · ");
+    const copyBtn = el("button", { type: "button", class: "icon-btn" }, "Copy as log row");
+    copyBtn.addEventListener("click", () => copy(logRow(f), copyBtn));
+    const done = el("button", { type: "button", class: "icon-btn" }, "Done");
+    const card = el("div", { class: "card" },
+      el("div", { class: "feedback-head" },
+        el("strong", {}, AREA_LABEL[f.area]),
+        el("span", { class: "meta" }, fmt(f.at)),
+      ),
+      f.flag ? el("div", { class: "flag" }, f.flag === "high" ? "⚠ Safeguarding words: please read and check in with him" : "⚠ Mentions wellbeing") : null,
+      el("p", { class: "feedback-text" }, f.text),
+      details ? el("div", { class: "meta" }, details) : null,
+      f.redactions?.length ? el("div", { class: "meta" }, `Removed for privacy: ${f.redactions.join(", ")}`) : null,
+      el("div", { class: "feedback-actions" }, copyBtn, done),
+    );
+    done.addEventListener("click", async () => {
+      done.setAttribute("disabled", "");
+      try {
+        const res = await fetch(WORKER_URL + "/api/parent/feedback/done", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id: f.id }),
+        });
+        if (!res.ok) throw new Error();
+        card.remove();
+        const h = box.querySelector("h2");
+        if (h) h.textContent = `Feedback (${box.querySelectorAll(".card").length})`;
+      } catch {
+        done.removeAttribute("disabled");
+        done.textContent = "Try again";
+      }
+    });
+    box.append(card);
+  }
 }
 
 async function showSession(key: string) {

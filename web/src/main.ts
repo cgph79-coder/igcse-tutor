@@ -9,6 +9,7 @@ import { startUpdateCheck } from "./update-check";
 import { formatDuration, initPomodoro, timerBar, timerButton } from "./pomodoro";
 import { installCard, registerServiceWorker } from "./install";
 import { flushFocus, queueFocus, startFocusSync } from "./focus-sync";
+import { feedbackButton } from "./feedback";
 import { ACCEPT, MAX_PHOTOS, onAttachmentWarning, readAttachment, type Attachment } from "./attachments";
 
 type Mode = "learn" | "practise" | "mark" | "quiz";
@@ -687,6 +688,21 @@ async function renderProgress(panel: HTMLElement) {
       ),
     ));
   }
+
+  panel.append(el("div", { class: "card feedback-card", style: "margin-top:24px" },
+    el("strong", {}, "Something not right, or an idea?"),
+    el("div", { class: "meta" }, "Tell us about the tutor, the Arcade or the timer. It goes to your parent's view."),
+    feedbackButton("Send feedback", () => {
+      if (!state.token) return null;
+      const s = syllabus();
+      return {
+        token: state.token,
+        area: "other",
+        context: { view: "progress", code: s.code, topic: findTopic(s, state.topicId)?.topic.title },
+        onAuthLost: logOut,
+      };
+    }),
+  ));
 
   const clear = el("button", { class: "icon-btn", style: "margin-top:16px" }, "Clear progress on this device");
   clear.addEventListener("click", async () => {

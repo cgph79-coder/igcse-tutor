@@ -34,6 +34,7 @@ ALLOWED_ORIGINS = "https://cgph79-coder.github.io"
 MAX_TOKENS = "800"              # max length of one tutor reply (+400 in Mark my answer)
 MAX_TOKENS_PHOTOS = "2000"      # max length of a reply marking photos/PDF pages
 MAX_TOKENS_QUIZ = "3000"        # max length of one batch of arcade-game questions
+MAX_TOKENS_QUIZ_CHECK = "1500"  # max length of the check that removes wrong or ambiguous cards
 MAX_HISTORY_MESSAGES = "16"     # older messages are dropped
 MAX_HISTORY_CHARS = "24000"     # and the history is capped at this many characters
 DAILY_REQUEST_LIMIT = "150"     # messages per student per day (UK time)

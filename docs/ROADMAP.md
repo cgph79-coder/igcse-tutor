@@ -2,6 +2,19 @@
 
 Ideas queued for future work, roughly in priority order. Each has enough detail to start from.
 
+## Feedback log
+
+Quick fixes from using the app. **Check this first at the start of each work session.** Size: **S** = under an hour, do it now · **M** = a few hours, schedule it · **L** = becomes a numbered item below. Status: *new*, *doing*, *done* (with where it went), or *won't do* (with why).
+
+| # | Date | From | Area | Feedback | Size | Status |
+|---|------|------|------|----------|------|--------|
+| F1 | 2026-11-26 | Student (via parent) | Arcade | Not enough time to read the question before the rocks start falling. | S | done: reading pause of 2–6 s with a progress bar (PR #4) |
+| F2 | 2026-11-26 | Card review | Arcade cards | 2 wrong and 2 weak History cards out of 26 (see "Card quality" below). | M | doing: 4 cards removed from the live bank; checking pass on branch `check-arcade-cards` |
+
+**Adding feedback:** add a row with the next number. Write what happened in the user's words, not the fix. Keep fixed items for a month, then move them to the bottom of this file's history (git keeps the rest).
+
+**Planned: in-app "Send feedback" (size M).** A small "Feedback" link in Progress and on the Arcade results screen. It has an area picker (Tutor, Arcade, Timer, Other), a one-line box and an optional "this happened just now" tick that attaches the app version, screen and topic (never the conversation). It sends to `POST /api/feedback` (KV, privacy-filtered, daily cap). The parent view shows a **Feedback** list with a "Copy as log row" button, so new items can be pasted straight into the table above.
+
 ## 1. Arcade-style quiz games
 
 **Goal:** make revision more fun by turning multiple-choice recall into short arcade games, using the same syllabus topics and progress tracking as the rest of the app.
@@ -25,6 +38,7 @@ Ideas queued for future work, roughly in priority order. Each has enough detail 
 
 **Status (Nov 2026): first game live.** Built: `POST /api/quiz-questions` (validated JSON, options shuffled, up to 80 questions banked per topic in KV for 30 days, banked rounds still playable after the daily limit), the lazy-loaded **Arcade** view (`web/src/arcade.ts`), **Asteroid answers** (`web/src/games/asteroids.ts`), calm mode, reduced-motion support, results with explanations and "Learn this", scores in Progress (mode `arcade`), personal bests per topic and a daily streak on the device.
 **Question set:** the arcade has its own bank of recall cards, written by a separate prompt (`buildQuizPrompt` in `worker/src/quiz.ts`) and stored under `qbank:cards-v2:…` in KV. Each card tests one core fact (term, definition, formula, rule, date, keyword) that he should recognise in a few seconds: a confirmation exercise like flashcards, not exam practice or a way to work through the modules. Questions are under ~100 characters and options under ~30. Negative questions ("Which is NOT…") are rejected, the difficulty is kept even, and each card's explanation is the fact to remember.
+**Card quality (Nov 2026 review):** a review of the first 26 live cards (History 0977) found 2 wrong (the Nazi Party founding year; Volksgemeinschaft confused with uniting all Germans) and 2 weak (a filler option; a title with two defensible answers). Those 4 were removed from the live bank. Every new batch now goes through a **checking pass**: a second model call judges each card (wrong or not-best answer, a second defensible option, inaccurate details, opinion questions, filler options, repeated facts, off-topic), and only cards it explicitly passes are served and saved. If the check fails, that batch can be played once but is never saved. The writing prompt also asks for exact dates and names, real wrong options and no "main/most" questions. Logs show `valid=… checked=… passed=…` per batch (`npx wrangler tail`). Re-review a sample of live cards per subject now and then.
 **Getting harder:** within a round, cards come easiest first (each card has a level: 1 essentials, 2 finer detail, 3 precise distinctions; about 3/4/3 per round). A banner announces each new level, and every card falls about 6.5% faster than the one before (card 10 is roughly 45% quicker), faster again on a streak. Calm mode keeps the harder cards but drops the timer. **Reading pause** (added after his first feedback): before the rocks move, each card holds for 2–6 s depending on how much text the question and answers have (LaTeX markup isn't counted), shown by a thin bar under the question. A level-up banner comes first and adds its own pause. He can answer during the pause and still gets the full time bonus. Tune with the `READ_*` constants in `web/src/games/asteroids.ts`. Between rounds, each topic has 5 **sectors**: scoring 8/10 or better moves him up one, and each sector starts about 10% faster.
 **Synthesis (synthesis.com) as a reference:** public material says little about its game rules. What's described: fast, quick-thinking arcade games kept apart from tracked lessons; mastery before moving on; unlocking levels; and a "mistakes are expected" tone. We borrowed the level-up/unlock feel (sectors), mastery gating (8/10 to advance) and the tone on the results screen. Worth a hands-on look at their Arcade (free trial) before building the next games.
 Next: Lane runner, Defend the base, Speed tiles (each a new `StartGame` in `web/src/games/` plus an entry in `GAMES`); simple badges; optional sound toggle; spot-check real generated questions for accuracy in the first week.
@@ -67,6 +81,33 @@ Note: on iPhone the installed app has its own storage, so he logs in again and p
 - **Notification:** the parent view (and later an email) flags "New syllabus version for 0973 — review update".
 
 **Done when:** a new student can pick subjects and exam year in under a minute, the tutor uses the right syllabus version for that year, and new Cambridge syllabus versions are detected and turned into reviewed updates without manual searching.
+
+## 4. Requests for more subjects and boards
+
+**Goal:** let a student (or parent) ask for a subject or exam board the app doesn't cover yet, see what happened to the request, and have new subjects added through a checked, repeatable process rather than one-off work.
+
+**How it would work:**
+- **Asking:** a "Request a subject" link under the subject list (in the tutor settings, the Arcade and later the onboarding screen) opens a short form:
+  - board (Cambridge, Pearson Edexcel, AQA, OCR, WJEC/Eduqas, other);
+  - qualification (IGCSE, GCSE, A level, other);
+  - subject;
+  - syllabus code if known;
+  - exam year;
+  - an optional note ("Paper 2 only", "Foundation tier").
+
+  No free-text personal details. The note goes through the same privacy filter as chat.
+- **Storing:** `POST /api/requests` saves it in KV (`request:<id>`) with a status. One request per subject per board, so duplicates add a "+1" rather than a new entry. A daily cap stops spam.
+- **Tracking:** the parent view gets a **Requests** list. Statuses are *requested → reviewing → drafting → ready to check → live*, or *declined* with a reason (e.g. "board doesn't publish a public specification", "too close to exams to add now"). The student sees the status of their own requests in the app.
+- **Adding a subject (the repeatable part):**
+  1. Claude drafts `syllabus/<board>-<code>-<years>.json` from the board's official specification, in its own words, with the section/topic structure, Core/Extended or Foundation/Higher split, papers, grading and calculator rules. It never copies the specification text, past papers or mark schemes.
+  2. A validation script checks the file against the `Syllabus` type: unique ids, every topic has subtopics, and the tiers match.
+  3. Subject guidance for the tutor prompt (`SUBJECT_GUIDANCE` in `worker/src/prompts/tutor.ts`): exam technique, units, the board's command words and how marking works (levels or points).
+  4. A quality sample: a few tutor replies and two arcade batches per subject are reviewed (as in the November card review) before release.
+  5. A parent/admin approves, the file is registered in `syllabus/index.ts`, and the request is marked *live* (the student is told).
+- **Board differences to design for:** tier names (Core/Extended vs Foundation/Higher), grading (A*–G vs 9–1), command-word lists, paper structures and coursework. Add these as fields on the syllabus rather than special cases in code.
+- **Links:** shares the subject catalogue and versioned syllabus files with onboarding (item 3). Once there are several students, request counts show which subjects to add first (see `COMMERCIALISATION.md`).
+
+**Done when:** a student can request a subject in under 30 seconds and see its status; a parent sees all requests in one place; and adding an approved subject follows the checklist above, ending in a validated syllabus file and a reviewed quality sample.
 
 ## Model choices
 

@@ -30,7 +30,19 @@ import {
 } from "./ratelimit";
 import { assessSafety, HIGH_RISK_REPLY } from "./safety";
 import { cleanBlocks, getFocusDays, recordFocusBlocks } from "./focus";
-import { addToBank, bankKey, buildQuizPrompt, buildRound, parseQuestions, readBank, shouldServeFromBank, shuffleOptions } from "./quiz";
+import {
+  addToBank,
+  bankKey,
+  buildCheckPrompt,
+  buildQuizPrompt,
+  buildRound,
+  parseQuestions,
+  parseVerdicts,
+  readBank,
+  shouldServeFromBank,
+  shuffleOptions,
+  type McqQuestion,
+} from "./quiz";
 import { findSyllabus, findTopic } from "../../syllabus/index";
 
 const STUDENT_ID = "student"; // single user for now; becomes a real user id with accounts
@@ -306,7 +318,7 @@ async function handleQuizQuestions(request: Request, env: Env): Promise<Response
     return json(request, env, { error: "limit", message: LIMIT_MESSAGE }, 429);
   }
 
-  const system = buildQuizPrompt({ syllabus, section: found.section, topic: found.topic, tier, count: count + 3 });
+  const system = buildQuizPrompt({ syllabus, section: found.section, topic: found.topic, tier, count: count + 5 });
   const messages: LlmMessage[] = [
     { role: "system", content: system },
     { role: "user", content: "Write the questions now." },
@@ -323,12 +335,39 @@ async function handleQuizQuestions(request: Request, env: Env): Promise<Response
     return json(request, env, { error: "Couldn't get questions right now. Please try again in a moment." }, 502);
   }
   const result = await readOpenAiStream(upstream.body, () => {});
-  const fresh = parseQuestions(result.text);
-  const tokens = (result.promptTokens ?? estimateTokens(system)) + (result.completionTokens ?? estimateTokens(result.text));
-  await recordUsage(env.TUTOR_KV, user.sub, tokens);
-  console.log(`llm quiz model=${target.model} finish=${result.finishReason ?? "?"} valid=${fresh.length} tokens=${tokens}`);
+  const written = parseQuestions(result.text);
+  let tokens = (result.promptTokens ?? estimateTokens(system)) + (result.completionTokens ?? estimateTokens(result.text));
 
-  if (fresh.length) await addToBank(env.TUTOR_KV, key, fresh);
+  // Second pass: have the model check every card; only cards it explicitly passes are kept and saved.
+  let fresh: McqQuestion[] = written;
+  let checked = false;
+  if (written.length) {
+    const checkPrompt = buildCheckPrompt({ syllabus, section: found.section, topic: found.topic, tier }, written);
+    try {
+      const res = await callLlm(target, [{ role: "system", content: checkPrompt }, { role: "user", content: "Check the cards now." }], num(env.MAX_TOKENS_QUIZ_CHECK, 1500));
+      if (res.ok && res.body) {
+        const check = await readOpenAiStream(res.body, () => {});
+        tokens += (check.promptTokens ?? estimateTokens(checkPrompt)) + (check.completionTokens ?? estimateTokens(check.text));
+        const passed = parseVerdicts(check.text, written.length);
+        if (passed) {
+          fresh = written.filter((_, i) => passed.has(i));
+          checked = true;
+        }
+      } else {
+        console.log(`LLM quiz check error model=${target.model} ${await describeError(res)}`);
+      }
+    } catch {
+      /* checker unreachable: handled below */
+    }
+  }
+  await recordUsage(env.TUTOR_KV, user.sub, tokens);
+  console.log(
+    `llm quiz model=${target.model} finish=${result.finishReason ?? "?"} valid=${written.length} ` +
+      `checked=${checked} passed=${checked ? fresh.length : "-"} tokens=${tokens}`,
+  );
+
+  // Unchecked cards may still be played this once, but are never saved for future rounds.
+  if (checked && fresh.length) await addToBank(env.TUTOR_KV, key, fresh);
   const questions = fresh.length >= 5 ? buildRound(fresh, count) : buildRound([...fresh, ...bank], count);
   if (questions.length < 5) {
     return json(request, env, { error: "Couldn't make good questions that time. Please try again." }, 502);

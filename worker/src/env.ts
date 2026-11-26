@@ -22,6 +22,8 @@ export interface Env {
   MAX_TOKENS_PHOTOS?: string;
   /** Max length of one batch of arcade-game questions. */
   MAX_TOKENS_QUIZ?: string;
+  /** Max length of the reply when checking a batch of arcade cards. */
+  MAX_TOKENS_QUIZ_CHECK?: string;
   MAX_HISTORY_MESSAGES?: string;
   MAX_HISTORY_CHARS?: string;
   DAILY_REQUEST_LIMIT?: string;

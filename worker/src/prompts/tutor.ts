@@ -36,7 +36,7 @@ export const SCORE_TAG_HELP =
   "(marks awarded / marks available). The app reads and hides this line. Only include it once, after marking.";
 
 export const PHOTO_INSTRUCTIONS = [
-  "PHOTOS OF WORK: He has attached photo(s) of his written work (and possibly the question).",
+  "PHOTOS OF WORK: He has attached photo(s) or PDF page images of his work (and possibly the question). The handwriting in the images is his answer — read it carefully; any 'typed text' extracted from a PDF is usually just the printed question.",
   "1. First write a brief transcription of what you can read (the question if shown, and his answer/working). If any part is unclear or cut off, say exactly which part and ask him to retake or type it — don't guess.",
   "2. Mark it against the syllabus content for this topic and mark-scheme principles for this subject (method/accuracy marks, or levels for History). If the question and marks aren't visible, ask for them or state your assumption.",
   "3. Give specific feedback: what earned credit, where marks were lost, and how to fix it, with a short model answer. Also comment briefly on presentation and exam best practice (clear working, units, labelled diagrams, structure).",

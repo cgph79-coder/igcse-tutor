@@ -5,7 +5,7 @@ import { ApiError, login, streamChat, type ChatMessage } from "./api";
 import { extractScore, renderMarkdown } from "./render";
 import { LocalProgressStore, prefs, type ProgressStore } from "./storage";
 import { applyTheme, el, initTheme, nextTheme } from "./ui";
-import { ACCEPT, MAX_PHOTOS, readAttachment, type Attachment } from "./attachments";
+import { ACCEPT, MAX_PHOTOS, onAttachmentWarning, readAttachment, type Attachment } from "./attachments";
 
 type Mode = "learn" | "practise" | "mark" | "quiz";
 const MODES: { id: Mode; label: string }[] = [
@@ -337,6 +337,7 @@ function renderTray() {
 }
 
 function composerView() {
+  onAttachmentWarning((msg) => addNotice(msg));
   textarea = el("textarea", {
     rows: "1",
     placeholder: state.mode === "mark" ? "Type, or tap 📎 for a photo…" : "Type your answer or question…",

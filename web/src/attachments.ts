@@ -2,7 +2,8 @@
  * Turning photos and files into something the tutor can read — all done on the phone,
  * so nothing is uploaded anywhere except to our own Worker.
  *  - Photos are shrunk to ≤1600px JPEG (smaller upload, lower AI cost).
- *  - PDFs: text is extracted; scanned PDFs (no text) become page images.
+ *  - PDFs: every page (up to MAX_PHOTOS) becomes an image so handwriting and annotations are
+ *    seen, and any typed text is extracted too to help with reading printed questions.
  *  - Word (.docx) and .txt: text is extracted.
  */
 
@@ -10,7 +11,7 @@ export type Attachment =
   | { kind: "image"; name: string; dataUrl: string }
   | { kind: "text"; name: string; text: string };
 
-export const MAX_PHOTOS = 4;
+export const MAX_PHOTOS = 6;
 export const MAX_FILE_TEXT = 8000;
 const MAX_SIDE = 1600;
 const MAX_DATA_URL = 1_400_000;
@@ -79,20 +80,14 @@ async function readPdf(file: File, name: string): Promise<Attachment[]> {
   const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
   const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
-  const pages = Math.min(doc.numPages, 10);
+  const pages = Math.min(doc.numPages, MAX_PHOTOS);
+  const out: Attachment[] = [];
   let text = "";
   for (let i = 1; i <= pages; i++) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
     text += content.items.map((it) => ("str" in it ? it.str : "")).join(" ") + "\n\n";
-  }
-  if (text.replace(/\s/g, "").length > 40 * pages) {
-    return [{ kind: "text", name, text: clip(text) }];
-  }
-  // Little or no text → probably a scan; send the first pages as images instead.
-  const out: Attachment[] = [];
-  for (let i = 1; i <= Math.min(doc.numPages, MAX_PHOTOS); i++) {
-    const page = await doc.getPage(i);
+    // Render the whole page (including handwriting and ink annotations) as an image.
     const viewport = page.getViewport({ scale: 2 });
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
@@ -100,7 +95,22 @@ async function readPdf(file: File, name: string): Promise<Attachment[]> {
     await page.render({ canvas, canvasContext: canvas.getContext("2d")!, viewport }).promise;
     out.push({ kind: "image", name: `${name} (page ${i})`, dataUrl: canvasToJpeg(canvas, canvas.width, canvas.height) });
   }
+  let note = "";
+  if (doc.numPages > pages) note = `\n[Only the first ${pages} of ${doc.numPages} pages were attached. Send the rest separately.]`;
+  if (text.replace(/\s/g, "").length > 20 || note) {
+    out.unshift({ kind: "text", name: `${name} (typed text)`, text: clip(text) + note });
+  }
+  if (doc.numPages > pages) warnUser(`${name} has ${doc.numPages} pages — only the first ${pages} were attached.`);
   return out;
+}
+
+/** Surface a warning without failing the upload. */
+let warn: ((msg: string) => void) | null = null;
+export function onAttachmentWarning(fn: (msg: string) => void) {
+  warn = fn;
+}
+function warnUser(msg: string) {
+  warn?.(msg);
 }
 
 async function readDocx(file: File): Promise<string> {

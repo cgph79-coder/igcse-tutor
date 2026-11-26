@@ -5,7 +5,7 @@ export interface ChatMessage {
   images?: string[];
 }
 
-export const MAX_IMAGES_PER_MESSAGE = 4;
+export const MAX_IMAGES_PER_MESSAGE = 6;
 export const MAX_IMAGE_CHARS = 2_000_000; // ≈1.5 MB per photo once base64-encoded
 const IMAGE_DATA_URL = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/;
 

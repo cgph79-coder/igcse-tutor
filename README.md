@@ -6,7 +6,7 @@ An AI study and revision tutor for Cambridge IGCSE, built for one student first 
 
 **Modes:** Learn · Practise (original exam-style questions, marked) · Mark my answer · Quick quiz. Progress and a "weak topics" list are kept on the device.
 
-**Photos and files:** tap 📎 to add up to 4 photos of handwritten work, a PDF, a Word (.docx) or a .txt file. Typed files are read on the phone and go through the normal tutor. Photos and scanned PDFs go to an image-reading model (Claude Sonnet via OpenRouter by default), which marks the work against the syllabus and mark-scheme principles.
+**Photos and files:** tap 📎 to add up to 6 photos of handwritten work, a PDF, a Word (.docx) or a .txt file. Word and .txt files are read on the phone and go through the normal tutor. Photos and PDF pages (up to 6, so handwriting on worksheets is seen) go to an image-reading model (Claude Sonnet via OpenRouter by default), which marks the work against the syllabus and mark-scheme principles.
 
 ## How it fits together
 

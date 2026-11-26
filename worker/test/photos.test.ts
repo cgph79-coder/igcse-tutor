@@ -120,7 +120,8 @@ describe("photo uploads", () => {
     expect(sanitizeMessages(msg([IMG]))).not.toBeNull();
     expect(sanitizeMessages(msg(["https://example.com/a.jpg"]))).toBeNull();
     expect(sanitizeMessages(msg(["data:image/svg+xml;base64,PHN2Zz4="]))).toBeNull();
-    expect(sanitizeMessages(msg([IMG, IMG, IMG, IMG, IMG]))).toBeNull();
+    expect(sanitizeMessages(msg([IMG, IMG, IMG, IMG, IMG, IMG]))).not.toBeNull();
+    expect(sanitizeMessages(msg([IMG, IMG, IMG, IMG, IMG, IMG, IMG]))).toBeNull();
     expect(sanitizeMessages(msg(["data:image/jpeg;base64," + "A".repeat(2_000_001)]))).toBeNull();
     expect(sanitizeMessages([{ role: "assistant", content: "x", images: [IMG] }, { role: "user", content: "y" }])).toBeNull();
   });

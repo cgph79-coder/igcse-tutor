@@ -364,3 +364,25 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .focus-day { margin-top: 8px; }
 .focus-day-head { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
 .focus-day .bar { margin-top: 4px; }
+
+/* ---- feedback ---- */
+.link-btn { border: none; background: none; padding: 4px 0; color: var(--accent); font-weight: 600; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+.review-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.feedback-line { margin-top: 18px; text-align: center; }
+.feedback-card .link-btn { margin-top: 6px; }
+.feedback-panel { text-align: left; }
+.feedback-panel h2 { text-align: center; margin-bottom: 8px; }
+.feedback-form { display: grid; gap: 10px; }
+.feedback-form textarea {
+  width: 100%; resize: vertical; min-height: 84px; padding: 10px 12px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface); font-size: 16px;
+}
+.feedback-form .segmented button { min-width: 60px; }
+.feedback-count { text-align: right; margin-top: -6px; font-size: 12px; color: var(--muted); }
+.feedback-form .meta { font-size: 13px; color: var(--muted); margin: 0; }
+.feedback-form .play-btn { justify-self: start; }
+.feedback-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.feedback-text { margin: 6px 0; white-space: pre-wrap; }
+.feedback-actions { display: flex; gap: 8px; margin-top: 8px; }
+.parent-list .feedback-box .card { cursor: default; }
+.feedback-box > p.meta { font-size: 13px; color: var(--muted); }

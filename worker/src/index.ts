@@ -4,6 +4,7 @@
  * Routes:
  *   POST /api/login                 { passcode }  → { token }   (student)
  *   POST /api/chat                  stream a tutor reply (SSE)
+ *   POST /api/quiz-questions        { code, topicId, tier, count } → { questions } (arcade games)
  *   GET  /api/usage                 today's usage for the student
  *   POST /api/parent/login          { password }  → { token }   (parent)
  *   GET  /api/parent/sessions       list session logs
@@ -27,6 +28,7 @@ import {
   recordUsage,
 } from "./ratelimit";
 import { assessSafety, HIGH_RISK_REPLY } from "./safety";
+import { addToBank, bankKey, buildQuizPrompt, buildRound, parseQuestions, readBank, shouldServeFromBank, shuffleOptions } from "./quiz";
 import { findSyllabus, findTopic } from "../../syllabus/index";
 
 const STUDENT_ID = "student"; // single user for now; becomes a real user id with accounts
@@ -272,6 +274,66 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
   return new Response(readable, { headers });
 }
 
+/** A batch of multiple-choice questions for the arcade games (JSON, not streamed). */
+async function handleQuizQuestions(request: Request, env: Env): Promise<Response> {
+  const user = await requireRole(request, env, "student");
+  if (!user) return json(request, env, { error: "Please log in again." }, 401);
+
+  const body = await readJson(request);
+  const syllabus = body && findSyllabus(String(body.code ?? ""));
+  const found = syllabus && findTopic(syllabus, String(body?.topicId ?? ""));
+  if (!body || !syllabus || !found) return json(request, env, { error: "Bad request." }, 400);
+  const tier =
+    syllabus.tiers && typeof body.tier === "string" && syllabus.tiers.includes(body.tier)
+      ? body.tier
+      : syllabus.defaultTier;
+  const count = Math.min(15, Math.max(5, Math.round(Number(body.count) || 10)));
+
+  const key = bankKey(syllabus.code, tier, found.topic.id);
+  const bank = await readBank(env.TUTOR_KV, key);
+  if (shouldServeFromBank(bank.length, count)) {
+    return json(request, env, { questions: buildRound(bank, count).map((q) => shuffleOptions(q)), source: "bank" });
+  }
+
+  const limits = { requests: num(env.DAILY_REQUEST_LIMIT, 150), tokens: num(env.DAILY_TOKEN_LIMIT, 400000) };
+  if (isOverLimit(await getUsage(env.TUTOR_KV, user.sub), limits)) {
+    // Out of AI budget for today, but banked questions still let him play.
+    if (bank.length >= 5) {
+      return json(request, env, { questions: buildRound(bank, count).map((q) => shuffleOptions(q)), source: "bank" });
+    }
+    return json(request, env, { error: "limit", message: LIMIT_MESSAGE }, 429);
+  }
+
+  const system = buildQuizPrompt({ syllabus, section: found.section, topic: found.topic, tier, count: count + 3 });
+  const messages: LlmMessage[] = [
+    { role: "system", content: system },
+    { role: "user", content: "Write the questions now." },
+  ];
+  const target = textTarget(env);
+  let upstream: Response;
+  try {
+    upstream = await callLlm(target, messages, num(env.MAX_TOKENS_QUIZ, 3000));
+  } catch {
+    return json(request, env, { error: "The question service couldn't be reached. Please try again in a moment." }, 502);
+  }
+  if (!upstream.ok || !upstream.body) {
+    console.log(`LLM quiz error model=${target.model} ${await describeError(upstream)}`);
+    return json(request, env, { error: "Couldn't get questions right now. Please try again in a moment." }, 502);
+  }
+  const result = await readOpenAiStream(upstream.body, () => {});
+  const fresh = parseQuestions(result.text);
+  const tokens = (result.promptTokens ?? estimateTokens(system)) + (result.completionTokens ?? estimateTokens(result.text));
+  await recordUsage(env.TUTOR_KV, user.sub, tokens);
+  console.log(`llm quiz model=${target.model} finish=${result.finishReason ?? "?"} valid=${fresh.length} tokens=${tokens}`);
+
+  if (fresh.length) await addToBank(env.TUTOR_KV, key, fresh);
+  const questions = fresh.length >= 5 ? buildRound(fresh, count) : buildRound([...fresh, ...bank], count);
+  if (questions.length < 5) {
+    return json(request, env, { error: "Couldn't make good questions that time. Please try again." }, 502);
+  }
+  return json(request, env, { questions: questions.map((q) => shuffleOptions(q)), source: "new" });
+}
+
 async function handleUsage(request: Request, env: Env): Promise<Response> {
   const user = await requireRole(request, env, "student");
   if (!user) return json(request, env, { error: "Please log in again." }, 401);
@@ -324,6 +386,8 @@ export default {
           return await handleLogin(request, env, "student");
         case "POST /api/chat":
           return await handleChat(request, env, ctx);
+        case "POST /api/quiz-questions":
+          return await handleQuizQuestions(request, env);
         case "GET /api/usage":
           return await handleUsage(request, env);
         case "POST /api/parent/login":

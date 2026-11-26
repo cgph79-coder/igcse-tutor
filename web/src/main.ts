@@ -21,7 +21,7 @@ const store: ProgressStore = new LocalProgressStore();
 
 const state = {
   token: prefs.get("token"),
-  view: "chat" as "chat" | "progress",
+  view: "chat" as "chat" | "progress" | "arcade",
   code: prefs.get("code") ?? SYLLABUSES[0].code,
   tier: prefs.get("tier"),
   topicId: prefs.get("topic") ?? "",
@@ -117,8 +117,18 @@ function resetConversation() {
 const root = document.getElementById("app")!;
 initTheme();
 
+let teardownView: (() => void) | null = null;
+
 function render() {
+  teardownView?.();
+  teardownView = null;
   root.replaceChildren(state.token ? appView() : loginView());
+}
+
+function logOut() {
+  prefs.set("token", null);
+  state.token = null;
+  render();
 }
 
 function loginView() {
@@ -157,6 +167,11 @@ function appView() {
     state.view = state.view === "progress" ? "chat" : "progress";
     render();
   });
+  const arcadeBtn = el("button", { class: "icon-btn", "aria-pressed": String(state.view === "arcade") }, "Arcade");
+  arcadeBtn.addEventListener("click", () => {
+    state.view = state.view === "arcade" ? "chat" : "arcade";
+    render();
+  });
   const newBtn = el("button", { class: "icon-btn", title: "Start a new conversation" }, "New");
   newBtn.addEventListener("click", () => {
     resetConversation();
@@ -166,8 +181,14 @@ function appView() {
 
   const header = el("header", { class: "top" },
     el("h1", {}, "IGCSE ", el("span", {}, "Tutor")),
-    newBtn, progressBtn, themeBtn,
+    newBtn, arcadeBtn, progressBtn, themeBtn,
   );
+
+  if (state.view === "arcade") {
+    const panel = el("section", { class: "panel arcade" }, el("p", { class: "meta" }, "Loading…"));
+    openArcade(panel);
+    return el("div", { class: "app" }, header, panel);
+  }
 
   if (state.view === "progress") {
     const panel = el("section", { class: "panel" }, el("p", { class: "meta" }, "Loading…"));
@@ -539,12 +560,7 @@ async function send(text: string, attachments: Attachment[] = []) {
     bubble.remove();
     state.messages.pop(); // let him resend
     saveConversation();
-    if (ex instanceof ApiError && ex.status === 401) {
-      prefs.set("token", null);
-      state.token = null;
-      render();
-      return;
-    }
+    if (ex instanceof ApiError && ex.status === 401) return logOut();
     if (ex instanceof ApiError && ex.kind === "limit") addNotice(ex.message);
     else addNotice(ex instanceof Error ? ex.message : "Something went wrong.", "error");
     textarea.value = text;
@@ -557,13 +573,55 @@ async function send(text: string, attachments: Attachment[] = []) {
   }
 }
 
+async function openArcade(panel: HTMLElement) {
+  const token = state.token;
+  if (!token) return;
+  let cancelled = false;
+  teardownView = () => (cancelled = true);
+  let mountArcade;
+  try {
+    ({ mountArcade } = await import("./arcade"));
+  } catch {
+    if (!cancelled) panel.replaceChildren(el("p", { class: "err" }, "Couldn't load the arcade. Check your connection and try again."));
+    return;
+  }
+  if (cancelled) return;
+  ensureTopic();
+  teardownView = mountArcade(panel, {
+    token,
+    code: state.code,
+    topicId: state.topicId,
+    tier: currentTier(),
+    store,
+    onTopicChange(code, topicId) {
+      if (code === state.code && topicId === state.topicId) return;
+      state.code = code;
+      state.topicId = topicId;
+      if (state.messages.length) resetConversation();
+      savePrefs();
+    },
+    onLearn(code, topicId, message) {
+      state.code = code;
+      state.topicId = topicId;
+      state.mode = "learn";
+      state.view = "chat";
+      state.setupOpen = false;
+      resetConversation();
+      savePrefs();
+      render();
+      send(message);
+    },
+    onAuthLost: logOut,
+  });
+}
+
 async function renderProgress(panel: HTMLElement) {
   const [all, weak] = await Promise.all([store.all(), store.weakest(5)]);
   panel.replaceChildren();
 
   panel.append(el("h2", {}, "Weak topics"));
   if (weak.length === 0) {
-    panel.append(el("p", { class: "meta" }, "No scores yet. Try Practise or Quick quiz — your marks will show here."));
+    panel.append(el("p", { class: "meta" }, "No scores yet. Try Practise, Quick quiz or the Arcade — your marks will show here."));
   }
   for (const t of weak) {
     const pct = Math.round(t.average * 100);
@@ -608,11 +666,7 @@ async function renderProgress(panel: HTMLElement) {
     }
   });
   const logout = el("button", { class: "icon-btn", style: "margin:16px 0 0 8px" }, "Log out");
-  logout.addEventListener("click", () => {
-    prefs.set("token", null);
-    state.token = null;
-    render();
-  });
+  logout.addEventListener("click", logOut);
   panel.append(clear, logout);
 }
 

@@ -20,6 +20,8 @@ export interface Env {
   ALLOWED_ORIGINS: string;
   MAX_TOKENS?: string;
   MAX_TOKENS_PHOTOS?: string;
+  /** Max length of one batch of arcade-game questions. */
+  MAX_TOKENS_QUIZ?: string;
   MAX_HISTORY_MESSAGES?: string;
   MAX_HISTORY_CHARS?: string;
   DAILY_REQUEST_LIMIT?: string;

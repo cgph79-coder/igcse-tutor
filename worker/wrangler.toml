@@ -3,6 +3,8 @@
 name = "igcse-tutor-worker"
 main = "src/index.ts"
 compatibility_date = "2026-11-01"
+workers_dev = true      # serve at igcse-tutor-worker.<subdomain>.workers.dev
+preview_urls = false    # no extra preview URLs for each version
 
 # KV namespace for usage caps, login throttling and parent-review session logs.
 # Create it with `npx wrangler kv namespace create TUTOR_KV` and paste the id below.

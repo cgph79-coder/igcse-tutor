@@ -1,0 +1,31 @@
+# Cloudflare Worker for IGCSE Tutor.
+# Secrets (API key, passcodes) are NOT in this file. Set them with `npx wrangler secret put <NAME>`.
+name = "igcse-tutor-worker"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+# KV namespace for usage caps, login throttling and parent-review session logs.
+# Create it with `npx wrangler kv namespace create TUTOR_KV` and paste the id below.
+[[kv_namespaces]]
+binding = "TUTOR_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+[vars]
+# --- LLM provider (any OpenAI-compatible chat completions API) ---
+# DeepSeek direct (data stored in China):
+LLM_BASE_URL = "https://api.deepseek.com/v1"
+LLM_MODEL = "deepseek-chat"
+# OpenRouter (US hosts) instead — swap the two lines above for:
+# LLM_BASE_URL = "https://openrouter.ai/api/v1"
+# LLM_MODEL = "deepseek/deepseek-chat"
+
+# Only this site may call the Worker (comma-separated list allowed).
+ALLOWED_ORIGINS = "https://cgph79-coder.github.io"
+
+# --- Cost controls ---
+MAX_TOKENS = "800"              # max length of one tutor reply
+MAX_HISTORY_MESSAGES = "16"     # older messages are dropped
+MAX_HISTORY_CHARS = "24000"     # and the history is capped at this many characters
+DAILY_REQUEST_LIMIT = "150"     # messages per student per day (UK time)
+DAILY_TOKEN_LIMIT = "400000"    # tokens per student per day
+LOG_RETENTION_DAYS = "90"

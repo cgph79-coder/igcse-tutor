@@ -2,8 +2,9 @@
  * Asteroid answers: four answer rocks drift down towards the base. Tap (or press 1–4) the rock
  * with the right answer before they land. Wrong picks and landings cost a shield; three shields.
  * It gets harder as the round goes on: the cards arrive easiest first (levels 1–3) and the rocks
- * fall faster with every card, faster still on a streak. Calm mode stops the drift (no timer)
- * but keeps the harder cards.
+ * fall faster with every card, faster still on a streak. Each card starts with a short reading
+ * pause (longer for longer questions) before the rocks move; he can answer during it.
+ * Calm mode stops the drift (no timer) but keeps the harder cards.
  */
 import { renderMarkdown } from "../render";
 import { el } from "../ui";
@@ -18,6 +19,25 @@ const RAMP_PER_CARD = 0.935;
 const RAMP_PER_STREAK = 0.97;
 const LEVEL_NAMES = ["", "Level 1", "Level 2 — trickier cards", "Level 3 — expert cards"];
 const LEVEL_PAUSE_MS = 1300;
+/** Reading time before the rocks start to fall: a base plus time per character of question and answers. */
+const READ_BASE_MS = 1200;
+const READ_MS_PER_Q_CHAR = 45;
+const READ_MS_PER_OPTION_CHAR = 20;
+const READ_MIN_MS = 2000;
+const READ_MAX_MS = 6000;
+
+/** Roughly how many characters he actually reads (LaTeX commands and $ signs don't count). */
+function readableLength(text: string): number {
+  return text.replace(/\\[a-zA-Z]+/g, " ").replace(/[${}^_\\]/g, "").replace(/\s+/g, " ").trim().length;
+}
+
+export function readingTimeMs(question: string, options: string[]): number {
+  const ms =
+    READ_BASE_MS +
+    readableLength(question) * READ_MS_PER_Q_CHAR +
+    options.reduce((n, o) => n + readableLength(o), 0) * READ_MS_PER_OPTION_CHAR;
+  return Math.round(Math.min(READ_MAX_MS, Math.max(READ_MIN_MS, ms)));
+}
 const LABELS = ["1", "2", "3", "4"];
 
 export const startAsteroids: StartGame = (stage, opts: GameOptions) => {
@@ -34,7 +54,7 @@ export const startAsteroids: StartGame = (stage, opts: GameOptions) => {
   let raf = 0;
   let paused = false;
   let ended = false;
-  let holdUntil = 0; // the rocks wait while a "level up" banner shows
+  let holdUntil = 0; // the rocks wait during the reading pause and any "level up" banner
   let shownLevel = 0;
   const timers: number[] = [];
   const answers: AnswerRecord[] = [];
@@ -76,17 +96,27 @@ export const startAsteroids: StartGame = (stage, opts: GameOptions) => {
     progress = 0;
     fallMs = Math.max(MIN_FALL_MS, BASE_FALL_MS * opts.speed * Math.pow(RAMP_PER_CARD, index) * Math.pow(RAMP_PER_STREAK, streak));
     const level = q.level ?? 0;
+    let bannerMs = 0;
     if (level > shownLevel) {
       // Announce harder cards (not the first level) and give him a beat before the rocks move.
       if (shownLevel > 0) {
         flash.textContent = `${LEVEL_NAMES[level]}${calm ? "" : " · faster"}`;
         flash.className = "arcade-flash level";
-        holdUntil = performance.now() + LEVEL_PAUSE_MS;
+        bannerMs = LEVEL_PAUSE_MS;
         later(() => flash.classList.contains("level") && (flash.className = "arcade-flash"), LEVEL_PAUSE_MS);
       }
       shownLevel = level;
     }
     questionEl.innerHTML = renderMarkdown(q.q, true);
+    if (!calm) {
+      // Reading pause: the rocks hold still while a thin bar fills, then start to fall.
+      const readMs = readingTimeMs(q.q, q.options);
+      holdUntil = performance.now() + bannerMs + readMs;
+      const bar = el("div", { class: "read-bar", "aria-hidden": "true" }, el("div"));
+      bar.style.setProperty("--read-ms", `${readMs}ms`);
+      bar.style.setProperty("--read-delay", `${bannerMs}ms`);
+      questionEl.append(bar);
+    }
     formation.classList.remove("landed");
     formation.style.setProperty("--fall", "0");
     rocks = q.options.map((opt, i) => {

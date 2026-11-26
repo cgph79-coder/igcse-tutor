@@ -5,7 +5,7 @@
  * on-screen, plus optional sound, vibration and a browser notification.
  * The timing logic lives in pomodoro-core.ts; this file is the UI around it.
  */
-import { prefs, type ProgressStore } from "./storage";
+import { prefs, type FocusRecord, type ProgressStore } from "./storage";
 import { el } from "./ui";
 import { isIos, isStandalone, showNotification } from "./install";
 import {
@@ -31,6 +31,8 @@ export interface PomodoroContext {
   currentTopic(): FocusTopic | null;
   /** Open the arcade on a topic for a quick recall round. */
   openArcade(code: string, topicId: string): void;
+  /** Called after a finished focus block is saved on the device. */
+  onFocusRecorded?(r: FocusRecord): void;
 }
 
 const STATE_KEY = "pomodoro:state";
@@ -122,7 +124,11 @@ function handle(events: PomodoroEvent[], now: number) {
   for (const e of events) {
     const fresh = now - e.at < FRESH_MS;
     if (e.type === "focusDone") {
-      if (e.topic) void ctx.store.recordFocus({ at: new Date(e.at).toISOString(), minutes: e.minutes, ...e.topic });
+      if (e.topic) {
+        const record: FocusRecord = { at: new Date(e.at).toISOString(), minutes: e.minutes, ...e.topic };
+        void ctx.store.recordFocus(record);
+        ctx.onFocusRecorded?.(record);
+      }
       const title = "Focus block done ✓";
       const body = `Take a ${e.nextBreakMin}-minute${e.long ? " long" : ""} break. Stand up, get some water and look away from the screen.`;
       if (fresh) {

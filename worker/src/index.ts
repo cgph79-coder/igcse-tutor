@@ -5,6 +5,7 @@
  *   POST /api/login                 { passcode }  → { token }   (student)
  *   POST /api/chat                  stream a tutor reply (SSE)
  *   POST /api/quiz-questions        { code, topicId, tier, count } → { questions } (arcade games)
+ *   POST /api/focus                 { blocks: [{ at, minutes, code }] } → { saved } (study timer)
  *   GET  /api/usage                 today's usage for the student
  *   POST /api/parent/login          { password }  → { token }   (parent)
  *   GET  /api/parent/sessions       list session logs
@@ -28,6 +29,7 @@ import {
   recordUsage,
 } from "./ratelimit";
 import { assessSafety, HIGH_RISK_REPLY } from "./safety";
+import { cleanBlocks, getFocusDays, recordFocusBlocks } from "./focus";
 import { addToBank, bankKey, buildQuizPrompt, buildRound, parseQuestions, readBank, shouldServeFromBank, shuffleOptions } from "./quiz";
 import { findSyllabus, findTopic } from "../../syllabus/index";
 
@@ -334,6 +336,16 @@ async function handleQuizQuestions(request: Request, env: Env): Promise<Response
   return json(request, env, { questions: questions.map((q) => shuffleOptions(q)), source: "new" });
 }
 
+/** Finished study-timer blocks: time, length and subject only. Doesn't count towards the daily limit. */
+async function handleFocus(request: Request, env: Env): Promise<Response> {
+  const user = await requireRole(request, env, "student");
+  if (!user) return json(request, env, { error: "Please log in again." }, 401);
+  const body = await readJson(request);
+  if (!body || !Array.isArray(body.blocks)) return json(request, env, { error: "Bad request." }, 400);
+  const saved = await recordFocusBlocks(env.TUTOR_KV, user.sub, cleanBlocks(body.blocks), num(env.LOG_RETENTION_DAYS, 90));
+  return json(request, env, { saved });
+}
+
 async function handleUsage(request: Request, env: Env): Promise<Response> {
   const user = await requireRole(request, env, "student");
   if (!user) return json(request, env, { error: "Please log in again." }, 401);
@@ -346,9 +358,14 @@ async function handleUsage(request: Request, env: Env): Promise<Response> {
 
 async function handleParentSessions(request: Request, env: Env): Promise<Response> {
   if (!(await requireRole(request, env, "parent"))) return json(request, env, { error: "Please log in." }, 401);
-  const [sessions, usage] = await Promise.all([listLogs(env.TUTOR_KV), getUsage(env.TUTOR_KV, STUDENT_ID)]);
+  const [sessions, usage, focus] = await Promise.all([
+    listLogs(env.TUTOR_KV),
+    getUsage(env.TUTOR_KV, STUDENT_ID),
+    getFocusDays(env.TUTOR_KV, STUDENT_ID, 14),
+  ]);
   return json(request, env, {
     sessions,
+    focus,
     usageToday: usage,
     limits: { requests: num(env.DAILY_REQUEST_LIMIT, 150), tokens: num(env.DAILY_TOKEN_LIMIT, 400000) },
     retentionDays: num(env.LOG_RETENTION_DAYS, 90),
@@ -388,6 +405,8 @@ export default {
           return await handleChat(request, env, ctx);
         case "POST /api/quiz-questions":
           return await handleQuizQuestions(request, env);
+        case "POST /api/focus":
+          return await handleFocus(request, env);
         case "GET /api/usage":
           return await handleUsage(request, env);
         case "POST /api/parent/login":

@@ -14,8 +14,16 @@ interface SessionSummary {
   flagged?: boolean;
   count?: number;
 }
+interface FocusDay {
+  day: string;
+  minutes: number;
+  blocks: number;
+  subjects: Record<string, number>;
+}
 interface SessionsResponse {
   sessions: SessionSummary[];
+  /** Last 14 days (UK), newest first. Older deploys of the Worker don't send it. */
+  focus?: FocusDay[];
   usageToday: { requests: number; tokens: number };
   limits: { requests: number; tokens: number };
   retentionDays: number;
@@ -114,6 +122,7 @@ async function showList() {
             `${data.usageToday.tokens.toLocaleString()} of ${data.limits.tokens.toLocaleString()} tokens. ` +
             `Logs are kept for ${data.retentionDays} days.`),
       ),
+      ...(data.focus ? focusSection(data.focus) : []),
       el("h2", {}, `Sessions (${data.sessions.length})`),
     );
     const flagged = data.sessions.filter((s) => s.flagged).length;
@@ -133,6 +142,44 @@ async function showList() {
   } catch (ex) {
     handleError(ex, panel);
   }
+}
+
+function duration(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h ? `${h} h${m ? ` ${m} min` : ""}` : `${m} min`;
+}
+
+/** Study-timer time per day: totals and subjects only, no content. */
+function focusSection(days: FocusDay[]): HTMLElement[] {
+  const week = days.slice(0, 7);
+  const prevWeek = days.slice(7, 14);
+  const sum = (ds: FocusDay[]) => ds.reduce((n, d) => n + d.minutes, 0);
+  const max = Math.max(...week.map((d) => d.minutes), 1);
+  const dayName = (day: string) =>
+    new Date(`${day}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+
+  const card = el("div", { class: "card focus-card" },
+    el("strong", {}, `Last 7 days: ${duration(sum(week))} focused`),
+    el("div", { class: "meta" },
+      `${week.reduce((n, d) => n + d.blocks, 0)} focus blocks · previous 7 days: ${duration(sum(prevWeek))}`),
+  );
+  for (const d of week) {
+    const subjects = Object.entries(d.subjects).sort((a, b) => b[1] - a[1]).map(([s, m]) => `${s} ${duration(m)}`).join(" · ");
+    card.append(el("div", { class: "focus-day" },
+      el("div", { class: "focus-day-head" },
+        el("span", {}, dayName(d.day)),
+        el("span", { class: "meta" }, d.minutes ? `${duration(d.minutes)} · ${d.blocks} block${d.blocks === 1 ? "" : "s"}` : "—"),
+      ),
+      el("div", { class: "bar" }, el("div", { style: `width:${Math.round((d.minutes / max) * 100)}%` })),
+      subjects ? el("div", { class: "meta" }, subjects) : null,
+    ));
+  }
+  return [
+    el("h2", {}, "Study timer"),
+    card,
+    el("p", { class: "meta" }, "Completed focus blocks from the study timer. Blocks done offline appear once his device reconnects."),
+  ];
 }
 
 async function showSession(key: string) {

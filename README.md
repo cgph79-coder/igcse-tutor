@@ -21,6 +21,7 @@ Phone / browser ──► GitHub Pages (web/)  ──►  Cloudflare Worker (wor
 - Only your GitHub Pages site may call the Worker.
 - Before any message reaches the AI, the Worker removes emails, phone numbers, addresses, postcodes, self-introduced names and any words you list in `BLOCKED_TERMS`.
 - Clear self-harm or abuse messages get a fixed, kind reply with Childline (0800 1111) and are never sent to the AI. They're flagged in the parent view.
+- The parent view also shows study-timer time per day and per subject. Only the time, length and subject of each finished focus block is sent, never anything he typed.
 
 ```
 igcse-tutor/

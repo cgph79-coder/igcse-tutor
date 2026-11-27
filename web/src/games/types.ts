@@ -47,6 +47,8 @@ export interface GameInfo {
   sectors?: boolean;
   /** Cards to ask for (the Worker allows up to 15); the round length if missing. */
   cards?: number;
+  /** Runs count towards the Dispatches career (cards come at the topic's career level). */
+  career?: boolean;
   /** Shown while the cards load. */
   loading?: string;
   /** True if there's a saved run for this topic that can be resumed. */

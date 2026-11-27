@@ -150,6 +150,20 @@ export function buildRound(pool: McqQuestion[], n: number, rand = Math.random): 
   return picked.sort((a, b) => a.level - b.level);
 }
 
+/**
+ * A round of one level for career runs: cards of that level first, then the nearest level
+ * if there aren't enough (a lower one before a higher one), easiest first.
+ */
+export function buildLevelRound(pool: McqQuestion[], n: number, level: 1 | 2 | 3, rand = Math.random): McqQuestion[] {
+  const order = [level, level - 1, level + 1, level - 2, level + 2].filter((l) => l >= 1 && l <= 3);
+  const picked: McqQuestion[] = [];
+  for (const l of order) {
+    if (picked.length >= n) break;
+    picked.push(...sample(pool.filter((q) => q.level === l), n - picked.length, rand));
+  }
+  return picked.sort((a, b) => a.level - b.level);
+}
+
 export function sample<T>(list: T[], n: number, rand = Math.random): T[] {
   const copy = list.slice();
   for (let i = copy.length - 1; i > 0; i--) {

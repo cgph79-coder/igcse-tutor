@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "isolatedModules": true
   },
-  "include": ["src", "../syllabus"]
+  "include": ["src", "../syllabus", "../shared"]
 }

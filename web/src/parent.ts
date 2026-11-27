@@ -5,6 +5,9 @@ import { WORKER_URL } from "./config";
 import { renderMarkdown } from "./render";
 import { el, initTheme } from "./ui";
 import { startUpdateCheck } from "./update-check";
+import { cleanCareer, coverage, followUps, nextRankNeeds, rankOf } from "../../shared/career";
+import { findSyllabus, findTopic } from "../../syllabus/index";
+import { EXAM_DATE } from "./config";
 
 interface SessionSummary {
   key: string;
@@ -25,6 +28,8 @@ interface SessionsResponse {
   sessions: SessionSummary[];
   /** Last 14 days (UK), newest first. Older deploys of the Worker don't send it. */
   focus?: FocusDay[];
+  /** The Dispatches career (progress only); null until he plays, missing on older Worker deploys. */
+  career?: unknown;
   usageToday: { requests: number; tokens: number };
   limits: { requests: number; tokens: number };
   retentionDays: number;
@@ -134,6 +139,7 @@ async function showList() {
             `Logs are kept for ${data.retentionDays} days.`),
       ),
       ...(data.focus ? focusSection(data.focus) : []),
+      ...careerSection(data.career),
       feedbackBox,
       el("h2", {}, `Sessions (${data.sessions.length})`),
     );
@@ -155,6 +161,37 @@ async function showList() {
   } catch (ex) {
     handleError(ex, panel);
   }
+}
+
+/** The Dispatches career: rank, coverage per subject and topics needing a follow-up. */
+function careerSection(raw: unknown): HTMLElement[] {
+  const c = cleanCareer(raw);
+  if (!c || !Object.keys(c.topics).length) return [];
+  const next = nextRankNeeds(c);
+  const last = Object.values(c.topics).reduce((m, t) => (t.last > m ? t.last : m), "");
+  const rows = coverage(c, EXAM_DATE).map((sc) =>
+    el("div", { class: "focus-day" },
+      el("div", { class: "focus-day-head" },
+        el("span", {}, findSyllabus(sc.code)?.subject ?? sc.code),
+        el("span", { class: "meta" }, `${sc.atGrade[0]}/${sc.topics} started · ★★ ${sc.atGrade[1]} · ★★★ ${sc.atGrade[2]}`),
+      ),
+      sc.behind ? el("div", { class: "flag" }, "Behind the pace for the exams") : null,
+    ),
+  );
+  const weak = followUps(c).slice(0, 5).map((f) => {
+    const s = findSyllabus(f.code);
+    return `${s ? findTopic(s, f.topicId)?.topic.title ?? f.topicId : f.topicId} (${Math.round(f.lastScore * 100)}%)`;
+  });
+  return [
+    el("div", { class: "card focus-card" },
+      el("strong", {}, `Dispatches career: ${rankOf(c)}`),
+      el("div", { class: "meta" },
+        (next ? `Next: ${next.rank} (needs ${next.text}). ` : "Top rank reached. ") + `Last played ${fmt(last)}.`),
+      ...rows,
+      weak.length ? el("div", { class: "meta" }, `Needs a follow-up: ${weak.join("; ")}.`) : null,
+    ),
+    el("p", { class: "meta" }, "Each topic has three levels (★); he clears one with 80%+ on a finished run. Only progress is stored, nothing he types."),
+  ];
 }
 
 function duration(mins: number): string {

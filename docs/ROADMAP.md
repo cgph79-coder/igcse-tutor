@@ -100,8 +100,24 @@ Next: Lane runner, Defend the base, Speed tiles (see also item 1b, the Dispatche
 - **Saving.** A new `POST/GET /api/career` stores the career state (`career:<user>` in KV, small JSON: ranks, mastery per topic, unlocked assignments, scenes seen). Like `focus.ts`, it holds progress only, never what he types. The device keeps a copy and syncs it, so it works offline. The server copy survives a new phone, a cleared browser or the installed iPhone app.
 - **Editor rank costs.** Each question is a model call (marking), so there's a daily cap like the tutor's. The questions come from the existing Practise mode prompt with a shorter answer format.
 
+**Phase 2 (built, Nov 2026): the career.**
+- **Every Dispatches run counts.** There's no separate mode. Each topic has a grade, 0–3 (shown as ☆☆☆ to ★★★), and a run is played at the next level (grade + 1, at most 3). The Worker serves cards of that level (`level` on `/api/quiz-questions`, `buildLevelRound` in `worker/src/quiz.ts`), topping up from the nearest level if there aren't enough. A finished run with 80%+ correct clears the level and adds a star.
+- **Ranks** (rules in `shared/career.ts`, `PROMOTIONS`):
+  - Staff reporter: 8 topics at ★, in at least 2 subjects.
+  - Senior correspondent: 20 at ★★, at least 2 in every subject.
+  - Editor: 30 at ★★★, at least 4 in every subject.
+  The results screen announces level clears and promotions.
+- **Topics aren't locked.** He revises in school order, not syllabus order, so the levels unlock instead.
+- **Career map** (Arcade → Career map, `web/src/career-view.ts`):
+  - his rank and progress to the next one, and weeks until exams (`EXAM_DATE` in `web/src/config.ts`, set to 1 May 2027);
+  - **follow-ups** (topics last scored under 60%, two or more days ago);
+  - each desk's coverage, with a **"falling behind"** flag when coverage trails the time gone between his first run and the exams (15% slack, none in the first fortnight);
+  - every topic with its stars and a Play button.
+- **Saving.** `shared/career.ts` holds the model and is used by both the app and the Worker. The device keeps a copy (`career:v1`), and `POST /api/career` merges it with the Worker's (`career:<user>` in KV, kept 400 days). Merging takes the higher grade per topic, so neither copy can undo progress. The app syncs when the Arcade opens and after every run. Only grades, run counts, dates and last scores are stored.
+- **Parent view** shows his rank, what's needed next, coverage and stars per subject, subjects behind pace, topics needing a follow-up, and when he last played.
+- **Not done yet:** mixed-topic assignments for Senior correspondents (these need a multi-topic option on `/api/quiz-questions`), and syncing the "scenes seen" list across devices (it's still per device).
+
 **Phases left:**
-- **2.** Career shell: desks, map, ranks, the campaign saved to the Worker, rank in the parent view.
 - **3.** The Editor rank with marked exam-style answers.
 - **4.** Topic-specific scenes written by Claude, checked like the cards and banked in KV.
 - **Later:** new challenge types that need new card formats (put events in order, pick the source to trust, odd one out). These need a change to the card prompt on the Worker.

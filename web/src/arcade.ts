@@ -13,6 +13,9 @@ import { feedbackButton, openFeedback } from "./feedback";
 import { loadJourney } from "./games/journey-save";
 import { GAME_NAME } from "./games/journey-content";
 import { CARDS_WANTED } from "./games/journey-core";
+import { gradeOf, levelFor, recordRun, type Level } from "../../shared/career";
+import { loadCareer, saveCareer, syncCareer } from "./career-sync";
+import { careerSummary, renderCareerMap, stars } from "./career-view";
 
 const ROUND_LENGTH = 10;
 /**
@@ -38,6 +41,7 @@ export const GAMES: GameInfo[] = [
     blurb: "A text adventure. Travel as a young newspaper reporter and check a fact at every stop to get your story on the front page.",
     sectors: false,
     cards: CARDS_WANTED,
+    career: true,
     loading: "Packing your bags",
     hasSave: (code, topicId) => loadJourney(code, topicId) !== null,
     load: () => import("./games/journey").then((m) => m.startJourney),
@@ -132,6 +136,10 @@ function inline(text: string, tag = "span", cls = "") {
 export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void {
   let stopGame: (() => void) | null = null;
   let alive = true;
+  let onLobby = false;
+  /** The card level of the Dispatches run in progress (career runs only). */
+  let runLevel: Level | null = null;
+  const careerGame = GAMES.find((g) => g.career);
 
   const syllabus = () => findSyllabus(ctx.code) ?? SYLLABUSES[0];
   const tierFor = (s: Syllabus) => (s.tiers ? (ctx.tier && s.tiers.includes(ctx.tier) ? ctx.tier : s.defaultTier) : null);
@@ -139,6 +147,7 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
   function lobby() {
     stopGame?.();
     stopGame = null;
+    onLobby = true;
     const s = syllabus();
     const tier = tierFor(s);
     const topic = findTopic(s, ctx.topicId)?.topic;
@@ -185,8 +194,13 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
           if (confirm("Start a new journey? Your saved one will be lost.")) startRound(g, false);
         });
       }
+      const career = loadCareer();
       const progress = g.sectors === false
-        ? (best ? `Best ${best}` : "") + (saved ? `${best ? " · " : ""}journey saved` : "")
+        ? [
+            g.career && topic ? `${stars(gradeOf(career, s.code, ctx.topicId))} · level ${levelFor(career, s.code, ctx.topicId)} on this topic` : "",
+            best ? `best ${best}` : "",
+            saved ? "journey saved" : "",
+          ].filter(Boolean).join(" · ")
         : `Sector ${sector} of ${MAX_SECTOR}` + (best ? ` · best ${best}` : "") +
           (sector < MAX_SECTOR ? ` · score ${CLEAR_SCORE * ROUND_LENGTH}+ to move up` : " · top speed");
       return el("div", { class: "card game-card" },
@@ -208,16 +222,33 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
       ),
       el("label", { class: "check" }, calm, " Calm mode (no timer)"),
       streak ? el("p", { class: "streak-note" }, `🔥 ${streak}-day streak — keep it going!`) : null,
+      careerGame ? careerSummary(loadCareer(), careerMap) : null,
       ...cards,
       el("p", { class: "meta soon" }, `Coming soon: ${COMING_SOON.join(" · ")}`),
       topic ? null : el("p", { class: "err" }, "Pick a topic to play."),
     ].filter((n): n is HTMLElement => n !== null));
   }
 
+  function careerMap() {
+    onLobby = false;
+    renderCareerMap(panel, loadCareer(), {
+      onBack: lobby,
+      onPlay: (code, topicId) => {
+        ctx.code = code;
+        ctx.topicId = topicId;
+        ctx.onTopicChange(code, topicId);
+        if (careerGame) startRound(careerGame, !!careerGame.hasSave?.(code, topicId));
+      },
+    });
+    panel.scrollTop = 0;
+  }
+
   async function startRound(game: GameInfo, resume = false) {
+    onLobby = false;
     const s = syllabus();
     const found = findTopic(s, ctx.topicId);
     if (!found) return;
+    runLevel = game.career ? levelFor(loadCareer(), s.code, found.topic.id) : null;
     panel.replaceChildren(el("div", { class: "arcade-loading", role: "status" },
       el("div", { class: "loader-rock", "aria-hidden": "true" }),
       el("p", {}, `${game.loading ?? "Getting ready"} for ${found.topic.title}…`),
@@ -229,7 +260,9 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
       [questions, start] = await Promise.all([
         // A saved run already holds its cards.
         resume ? Promise.resolve([]) :
-          fetchQuizQuestions(ctx.token, { code: s.code, topicId: found.topic.id, tier: tierFor(s), count: game.cards ?? ROUND_LENGTH }),
+          fetchQuizQuestions(ctx.token, {
+            code: s.code, topicId: found.topic.id, tier: tierFor(s), count: game.cards ?? ROUND_LENGTH, level: runLevel ?? undefined,
+          }),
         game.load(),
       ]);
     } catch (ex) {
@@ -275,6 +308,7 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
 
     let newBest = false;
     let sectorNote = "";
+    let careerNote: HTMLElement | null = null;
     let streak = currentStreak();
     if (found && total > 0) {
       ctx.store.recordScore({
@@ -288,6 +322,21 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
       }
       streak = bumpStreak();
       const sector = readSector(game.id, s.code, found.topic.id);
+      if (game.career && runLevel) {
+        const res = recordRun(loadCareer(), { code: s.code, topicId: found.topic.id, level: runLevel, got, total, finished: !r.quit });
+        saveCareer(res.career);
+        void syncCareer(ctx.token).catch(() => {}); // an expired login shows up on the next request
+        const nextLevel = levelFor(res.career, s.code, found.topic.id);
+        careerNote = el("div", { class: "career-note" },
+          res.promotedTo ? el("div", { class: "score-chip" }, `📰 Promoted to ${res.promotedTo}!`) : null,
+          el("div", { class: "meta" },
+            res.cleared && res.newGrade >= runLevel
+              ? `Level ${runLevel} cleared on this topic: ${stars(res.newGrade)}.` + (res.newGrade < 3 ? ` Next time here: level ${nextLevel}.` : " Topic mastered!")
+              : r.quit
+                ? `Finish the journey with ${Math.ceil(0.8 * total)}+ correct to clear level ${runLevel}.`
+                : `Clear level ${runLevel} with 80% or more correct (you got ${Math.round((got / total) * 100)}%).`),
+        );
+      }
       if (game.sectors === false) {
         /* story games have no speed sectors */
       } else if (!r.quit && total >= ROUND_LENGTH && got / total >= CLEAR_SCORE) {
@@ -348,6 +397,7 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
         el("div", { class: "meta" }, `${got}/${total} correct · best streak ${r.bestStreak}` + (streak ? ` · 🔥 ${streak}-day streak` : "")),
         newBest ? el("div", { class: "score-chip" }, "New personal best!") : null,
         sectorNote ? el("div", { class: "meta" }, sectorNote) : null,
+        careerNote,
       ),
       el("div", { class: "results-actions" }, again, back),
       wrong.length ? el("h2", { style: "margin-top:20px" }, "Worth another look") : el("p", {}, total ? `Perfect ${game.sectors === false ? "run" : "round"}, nothing to fix! 🎉` : ""),
@@ -364,6 +414,12 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
   }
 
   lobby();
+  // Pick up progress made on another device, then refresh the lobby if he's still on it.
+  if (careerGame) {
+    syncCareer(ctx.token)
+      .then(() => alive && onLobby && lobby())
+      .catch((ex) => ex instanceof ApiError && ex.status === 401 && alive && ctx.onAuthLost());
+  }
   return () => {
     alive = false;
     stopGame?.();

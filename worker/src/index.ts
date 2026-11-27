@@ -4,7 +4,9 @@
  * Routes:
  *   POST /api/login                 { passcode }  → { token }   (student)
  *   POST /api/chat                  stream a tutor reply (SSE)
- *   POST /api/quiz-questions        { code, topicId, tier, count } → { questions } (arcade games)
+ *   POST /api/quiz-questions        { code, topicId, tier, count, level? } → { questions } (arcade games)
+ *   GET  /api/career                → { career } (Dispatches career, progress only)
+ *   POST /api/career                { career } → { career } merged with the stored copy
  *   POST /api/focus                 { blocks: [{ at, minutes, code }] } → { saved } (study timer)
  *   POST /api/feedback              { area, text, context? } → { ok } (in-app feedback)
  *   GET  /api/usage                 today's usage for the student
@@ -34,11 +36,13 @@ import {
 import { assessSafety, HIGH_RISK_REPLY } from "./safety";
 import { cleanBlocks, getFocusDays, recordFocusBlocks } from "./focus";
 import { deleteFeedback, listFeedback, saveFeedback } from "./feedback";
+import { getCareer, saveCareer } from "./career";
 import {
   addToBank,
   bankKey,
   buildCheckPrompt,
   buildQuizPrompt,
+  buildLevelRound,
   buildRound,
   parseQuestions,
   parseVerdicts,
@@ -306,18 +310,21 @@ async function handleQuizQuestions(request: Request, env: Env): Promise<Response
       ? body.tier
       : syllabus.defaultTier;
   const count = Math.min(15, Math.max(5, Math.round(Number(body.count) || 10)));
+  // Career runs ask for one level of card; otherwise a round gets harder as it goes.
+  const level = [1, 2, 3].includes(Number(body.level)) ? (Number(body.level) as 1 | 2 | 3) : null;
+  const round = (pool: McqQuestion[]) => (level ? buildLevelRound(pool, count, level) : buildRound(pool, count));
 
   const key = bankKey(syllabus.code, tier, found.topic.id);
   const bank = await readBank(env.TUTOR_KV, key);
   if (shouldServeFromBank(bank.length, count)) {
-    return json(request, env, { questions: buildRound(bank, count).map((q) => shuffleOptions(q)), source: "bank" });
+    return json(request, env, { questions: round(bank).map((q) => shuffleOptions(q)), source: "bank" });
   }
 
   const limits = { requests: num(env.DAILY_REQUEST_LIMIT, 150), tokens: num(env.DAILY_TOKEN_LIMIT, 400000) };
   if (isOverLimit(await getUsage(env.TUTOR_KV, user.sub), limits)) {
     // Out of AI budget for today, but banked questions still let him play.
     if (bank.length >= 5) {
-      return json(request, env, { questions: buildRound(bank, count).map((q) => shuffleOptions(q)), source: "bank" });
+      return json(request, env, { questions: round(bank).map((q) => shuffleOptions(q)), source: "bank" });
     }
     return json(request, env, { error: "limit", message: LIMIT_MESSAGE }, 429);
   }
@@ -372,7 +379,8 @@ async function handleQuizQuestions(request: Request, env: Env): Promise<Response
 
   // Unchecked cards may still be played this once, but are never saved for future rounds.
   if (checked && fresh.length) await addToBank(env.TUTOR_KV, key, fresh);
-  const questions = fresh.length >= 5 ? buildRound(fresh, count) : buildRound([...fresh, ...bank], count);
+  // A fresh batch has only about a third of its cards at any one level, so career runs also draw on the bank.
+  const questions = fresh.length >= 5 && !level ? round(fresh) : round([...fresh, ...bank]);
   if (questions.length < 5) {
     return json(request, env, { error: "Couldn't make good questions that time. Please try again." }, 502);
   }
@@ -387,6 +395,16 @@ async function handleFocus(request: Request, env: Env): Promise<Response> {
   if (!body || !Array.isArray(body.blocks)) return json(request, env, { error: "Bad request." }, 400);
   const saved = await recordFocusBlocks(env.TUTOR_KV, user.sub, cleanBlocks(body.blocks), num(env.LOG_RETENTION_DAYS, 90));
   return json(request, env, { saved });
+}
+
+/** The Dispatches career: GET returns the stored copy; POST merges the device's copy into it. */
+async function handleCareer(request: Request, env: Env): Promise<Response> {
+  const user = await requireRole(request, env, "student");
+  if (!user) return json(request, env, { error: "Please log in again." }, 401);
+  if (request.method === "GET") return json(request, env, { career: await getCareer(env.TUTOR_KV, user.sub) });
+  const body = await readJson(request);
+  const career = await saveCareer(env.TUTOR_KV, user.sub, body?.career);
+  return career ? json(request, env, { career }) : json(request, env, { error: "Bad request." }, 400);
 }
 
 /** A short note about the app from the student, for the parent view and the feedback log. */
@@ -429,14 +447,16 @@ async function handleUsage(request: Request, env: Env): Promise<Response> {
 
 async function handleParentSessions(request: Request, env: Env): Promise<Response> {
   if (!(await requireRole(request, env, "parent"))) return json(request, env, { error: "Please log in." }, 401);
-  const [sessions, usage, focus] = await Promise.all([
+  const [sessions, usage, focus, career] = await Promise.all([
     listLogs(env.TUTOR_KV),
     getUsage(env.TUTOR_KV, STUDENT_ID),
     getFocusDays(env.TUTOR_KV, STUDENT_ID, 14),
+    getCareer(env.TUTOR_KV, STUDENT_ID),
   ]);
   return json(request, env, {
     sessions,
     focus,
+    career,
     usageToday: usage,
     limits: { requests: num(env.DAILY_REQUEST_LIMIT, 150), tokens: num(env.DAILY_TOKEN_LIMIT, 400000) },
     retentionDays: num(env.LOG_RETENTION_DAYS, 90),
@@ -476,6 +496,9 @@ export default {
           return await handleChat(request, env, ctx);
         case "POST /api/quiz-questions":
           return await handleQuizQuestions(request, env);
+        case "GET /api/career":
+        case "POST /api/career":
+          return await handleCareer(request, env);
         case "POST /api/feedback":
           return await handleFeedback(request, env);
         case "GET /api/parent/feedback":

@@ -371,6 +371,28 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .journey-next { justify-self: start; }
 .journey-part { margin: -6px 0 0; font-weight: 600; }
 
+/* ---- Dispatches career ---- */
+.career-summary { display: flex; align-items: center; gap: 12px; }
+.career-bar { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; margin: 6px 0 2px; }
+.career-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.career-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.career-top h2 { margin: 0; }
+.career-rank { display: grid; gap: 2px; }
+.career-rank p { margin: 6px 0 0; }
+.career-rank-name { font-size: 20px; font-weight: 700; font-family: Georgia, "Times New Roman", serif; }
+.career-desk { display: grid; gap: 4px; }
+.career-desk.behind { border-left: 4px solid var(--danger); }
+.career-desk-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; }
+.career-behind { color: var(--danger); font-size: 14px; font-weight: 600; }
+.career-desk-topics summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 14px; padding: 4px 0; }
+.career-section { margin-top: 8px; }
+.career-section-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
+.career-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); }
+.career-row-text { flex: 1; display: grid; gap: 1px; min-width: 0; overflow-wrap: anywhere; }
+.career-follow { display: grid; gap: 4px; }
+.play-btn.small { min-height: 36px; padding: 0 14px; font-size: 14px; }
+.career-note { display: grid; gap: 4px; justify-items: center; margin-top: 4px; }
+
 /* ---- study timer ---- */
 .timer-btn { min-width: 36px; }
 .pomo-bar {

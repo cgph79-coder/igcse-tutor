@@ -4,7 +4,7 @@ An AI study and revision tutor for Cambridge IGCSE, built for one student first 
 
 **Subjects:** Additional Mathematics (0606), Co-ordinated Sciences Double Award (0973), Computer Science (0984), History (0977, Option B with Germany, Russia and the USA).
 
-**Modes:** Learn · Practise (original exam-style questions, marked) · Mark my answer · Quick quiz. The **Arcade** has quick recall games: Asteroid answers (all subjects) and Dispatches, a text adventure for every subject where you travel as a young newspaper reporter and check a fact at every stop. Progress and a "weak topics" list are kept on the device.
+**Modes:** Learn · Practise (original exam-style questions, marked) · Mark my answer · Quick quiz. The **Arcade** has quick recall games: Asteroid answers (all subjects) and Dispatches, a text adventure for every subject where you travel as a young newspaper reporter and check a fact at every stop. Every run counts towards a career: each topic has three levels, and ranks go from Cub reporter to Editor. The career is saved on the device and the Worker (progress only), and shown in the parent view. Progress and a "weak topics" list are kept on the device.
 
 **Photos and files:** tap 📎 to add up to 6 photos of handwritten work, a PDF, a Word (.docx) or a .txt file. Word and .txt files are read on the phone and go through the normal tutor. Photos and PDF pages (up to 6, so handwriting on worksheets is seen) go to an image-reading model (Claude Sonnet via OpenRouter by default), which marks the work against the syllabus and mark-scheme principles.
 

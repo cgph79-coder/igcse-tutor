@@ -68,7 +68,7 @@ export interface McqQuestion {
 /** A batch of multiple-choice questions for the arcade games. */
 export async function fetchQuizQuestions(
   token: string,
-  req: { code: string; topicId: string; tier: string | null; count: number },
+  req: { code: string; topicId: string; tier: string | null; count: number; level?: 1 | 2 | 3 },
 ): Promise<McqQuestion[]> {
   const res = await fetch(WORKER_URL + "/api/quiz-questions", {
     method: "POST",
@@ -114,4 +114,15 @@ export async function streamChat(
     }
   }
   return final;
+}
+
+/** Send this device's career; the Worker merges it with its copy and returns the result. */
+export async function postCareer(token: string, career: unknown): Promise<unknown> {
+  const res = await fetch(WORKER_URL + "/api/career", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ career }),
+  });
+  if (!res.ok) throw await errorFrom(res);
+  return ((await res.json()) as { career: unknown }).career;
 }

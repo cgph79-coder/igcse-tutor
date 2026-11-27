@@ -3,11 +3,14 @@ import {
   cleanCareer,
   coverage,
   emptyCareer,
+  examPasses,
+  examUnlocked,
   followUps,
   levelFor,
   mergeCareers,
   nextRankNeeds,
   rankOf,
+  recordExam,
   recordRun,
   topicsByCode,
   weeksUntil,
@@ -114,5 +117,33 @@ describe("follow-ups and pacing", () => {
     expect(cov.find((x) => x.code === "0606")!.behind).toBe(true);
     expect(coverage(emptyCareer(T0), "2027-05-01", T0).some((x) => x.behind)).toBe(false); // no nagging at the start
     expect(weeksUntil("2027-05-01", new Date("2027-04-17T00:00:00Z"))).toBe(2);
+  });
+});
+
+describe("the Editor's desk in the career", () => {
+  it("opens at three stars and keeps the best mark", () => {
+    let c = emptyCareer(T0);
+    for (let i = 0; i < 2; i++) c = run(c, "0977", "weimar", 10).career;
+    expect(examUnlocked(c, "0977", "weimar")).toBe(false);
+    c = run(c, "0977", "weimar", 10).career;
+    expect(examUnlocked(c, "0977", "weimar")).toBe(true);
+    let r = recordExam(c, "0977", "weimar", 0.5);
+    expect(r.best).toBe(true);
+    r = recordExam(r.career, "0977", "weimar", 0.8);
+    expect(r.career.topics["0977:weimar"].exam).toBe(0.8);
+    r = recordExam(r.career, "0977", "weimar", 0.6);
+    expect(r.best).toBe(false);
+    expect(r.career.topics["0977:weimar"].exam).toBe(0.8);
+    expect(examPasses(r.career)).toEqual({ "0977": 1 });
+  });
+
+  it("merges and cleans exam marks", () => {
+    const base = run(run(run(emptyCareer(T0), "0977", "weimar", 10).career, "0977", "weimar", 10).career, "0977", "weimar", 10).career;
+    const a = recordExam(base, "0977", "weimar", 0.9).career;
+    expect(mergeCareers(base, a).topics["0977:weimar"].exam).toBe(0.9);
+    expect(mergeCareers(base, base).topics["0977:weimar"].exam).toBeUndefined();
+    const raw = JSON.parse(JSON.stringify(a));
+    raw.topics["0977:weimar"].exam = 7;
+    expect(cleanCareer(raw)!.topics["0977:weimar"].exam).toBe(1);
   });
 });

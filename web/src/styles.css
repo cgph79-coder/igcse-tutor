@@ -392,6 +392,20 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .career-follow { display: grid; gap: 4px; }
 .play-btn.small { min-height: 36px; padding: 0 14px; font-size: 14px; }
 .career-note { display: grid; gap: 4px; justify-items: center; margin-top: 4px; }
+.career-row-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.editor-btn { min-height: 36px; font-size: 14px; white-space: nowrap; }
+.exam-q { display: grid; gap: 8px; }
+.exam-q-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.exam-q-text { font-weight: 600; overflow-wrap: anywhere; }
+.exam-q textarea {
+  width: 100%; resize: vertical; min-height: 80px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px;
+  background: var(--bg); color: var(--text); font-size: 16px; line-height: 1.45;
+}
+.exam-q textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.score-chip.partial { background: var(--warn-bg); color: var(--text); }
+.exam-answer { font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.exam-result details summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 14px; }
+.exam-result details ul { margin: 6px 0; padding-left: 20px; }
 
 /* ---- study timer ---- */
 .timer-btn { min-width: 36px; }

@@ -117,8 +117,16 @@ Next: Lane runner, Defend the base, Speed tiles (see also item 1b, the Dispatche
 - **Parent view** shows his rank, what's needed next, coverage and stars per subject, subjects behind pace, topics needing a follow-up, and when he last played.
 - **Not done yet:** mixed-topic assignments for Senior correspondents (these need a multi-topic option on `/api/quiz-questions`), and syncing the "scenes seen" list across devices (it's still per device).
 
+**Phase 3 (built, Nov 2026): the Editor's desk.**
+- **When it opens.** Exam-style questions open **per topic once it's at ★★★** (`EXAM_UNLOCK_GRADE` in `shared/career.ts`), rather than only at the Editor rank, which would need 30 mastered topics first. On the career map, ★★★ topics get a "✍ Editor" button.
+- **A run** is three original exam-style questions, getting harder: 2–3 marks, 3–4 marks, then 4–6 marks (History: an "explain why" question marked by levels, no 10-mark essays). Questions are answerable on a phone: no diagrams or sources. He types answers (saved on the device as he goes; "✍ Continue" picks them up again for 20 hours). The tutor marks all three like an examiner, then the app shows marks, feedback, the mark scheme and a model answer, with "Go through it with the tutor" for each question.
+- **Scoring.** 70%+ earns ✍ on the topic (`EXAM_PASS`). The best mark is kept in the career (`exam` per topic, merged by taking the higher), shown on the map and counted per subject in the parent view.
+- **Worker** (`worker/src/exam.ts`): `POST /api/exam/start` checks the stored career has the topic at ★★★, then writes questions and mark schemes. The schemes stay in KV (`exam:<user>:<run>`, one day) and only the questions go to the app. `POST /api/exam/mark` marks the run once, then deletes it (kept if marking fails, so he can retry).
+- **Cost** is two text-model calls per run (DeepSeek), counted in the normal daily limits, plus a cap of `EXAM_DAILY_LIMIT` runs a day (4, in `wrangler.toml`).
+- **Safety.** Answers go through the same privacy filter and safeguarding check as chat. A high-risk message gets the Childline reply and is never sent for marking. The marking prompt treats answers as data, not instructions. Every run is logged for the parent view as an "editor's desk" session.
+- **Next:** check a sample of real questions and marks per subject in the first week, as with the cards. Possibly require some ✍ passes for the Editor rank.
+
 **Phases left:**
-- **3.** The Editor rank with marked exam-style answers.
 - **4.** Topic-specific scenes written by Claude, checked like the cards and banked in KV.
 - **Later:** new challenge types that need new card formats (put events in order, pick the source to trust, odd one out). These need a change to the card prompt on the Worker.
 

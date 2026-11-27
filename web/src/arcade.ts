@@ -16,6 +16,7 @@ import { CARDS_WANTED } from "./games/journey-core";
 import { gradeOf, levelFor, recordRun, type Level } from "../../shared/career";
 import { loadCareer, saveCareer, syncCareer } from "./career-sync";
 import { careerSummary, renderCareerMap, stars } from "./career-view";
+import { renderEditorsDesk } from "./exam-view";
 
 const ROUND_LENGTH = 10;
 /**
@@ -233,6 +234,24 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
     onLobby = false;
     renderCareerMap(panel, loadCareer(), {
       onBack: lobby,
+      onEditor: (code, topicId) => {
+        const sy = findSyllabus(code);
+        const found = sy && findTopic(sy, topicId);
+        if (!sy || !found) return;
+        ctx.code = code;
+        ctx.topicId = topicId;
+        ctx.onTopicChange(code, topicId);
+        stopGame = renderEditorsDesk(panel, {
+          token: ctx.token,
+          code,
+          topicId,
+          topicTitle: found.topic.title,
+          tier: tierFor(sy),
+          onBack: careerMap,
+          onLearn: (message) => ctx.onLearn(code, topicId, message),
+          onAuthLost: ctx.onAuthLost,
+        });
+      },
       onPlay: (code, topicId) => {
         ctx.code = code;
         ctx.topicId = topicId;

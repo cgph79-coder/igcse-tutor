@@ -7,6 +7,8 @@
  *   POST /api/quiz-questions        { code, topicId, tier, count, level? } → { questions } (arcade games)
  *   GET  /api/career                → { career } (Dispatches career, progress only)
  *   POST /api/career                { career } → { career } merged with the stored copy
+ *   POST /api/exam/start            { code, topicId, tier } → { runId, questions } (Editor's desk, topic at ★★★)
+ *   POST /api/exam/mark             { runId, answers } → { results, got, max }
  *   POST /api/focus                 { blocks: [{ at, minutes, code }] } → { saved } (study timer)
  *   POST /api/feedback              { area, text, context? } → { ok } (in-app feedback)
  *   GET  /api/usage                 today's usage for the student
@@ -37,6 +39,20 @@ import { assessSafety, HIGH_RISK_REPLY } from "./safety";
 import { cleanBlocks, getFocusDays, recordFocusBlocks } from "./focus";
 import { deleteFeedback, listFeedback, saveFeedback } from "./feedback";
 import { getCareer, saveCareer } from "./career";
+import {
+  buildExamPrompt,
+  buildMarkPrompt,
+  countRun,
+  MAX_ANSWER,
+  newRunId,
+  parseExamQuestions,
+  parseMarks,
+  publicQuestions,
+  runsToday,
+  saveRun,
+  takeRun,
+} from "./exam";
+import { examUnlocked } from "../../shared/career";
 import {
   addToBank,
   bankKey,
@@ -407,6 +423,110 @@ async function handleCareer(request: Request, env: Env): Promise<Response> {
   return career ? json(request, env, { career }) : json(request, env, { error: "Bad request." }, 400);
 }
 
+/** Read one complete (non-streamed) reply from the text model; null on any failure. */
+async function askText(env: Env, system: string, user: string, maxTokens: number): Promise<{ text: string; tokens: number } | null> {
+  const target = textTarget(env);
+  try {
+    const res = await callLlm(target, [{ role: "system", content: system }, { role: "user", content: user }], maxTokens);
+    if (!res.ok || !res.body) {
+      console.log(`LLM exam error model=${target.model} ${await describeError(res)}`);
+      return null;
+    }
+    const r = await readOpenAiStream(res.body, () => {});
+    return { text: r.text, tokens: (r.promptTokens ?? estimateTokens(system)) + (r.completionTokens ?? estimateTokens(r.text)) };
+  } catch {
+    return null;
+  }
+}
+
+const EXAM_LIMIT_MESSAGE = "That's all the Editor's desk for today. It costs more than the other games. Try again tomorrow, or practise in the tutor.";
+
+/** Editor's desk: three exam-style questions for a topic he has at ★★★. Mark schemes stay on the Worker. */
+async function handleExamStart(request: Request, env: Env): Promise<Response> {
+  const user = await requireRole(request, env, "student");
+  if (!user) return json(request, env, { error: "Please log in again." }, 401);
+  const body = await readJson(request);
+  const syllabus = body && findSyllabus(String(body.code ?? ""));
+  const found = syllabus && findTopic(syllabus, String(body?.topicId ?? ""));
+  if (!body || !syllabus || !found) return json(request, env, { error: "Bad request." }, 400);
+  const tier =
+    syllabus.tiers && typeof body.tier === "string" && syllabus.tiers.includes(body.tier) ? body.tier : syllabus.defaultTier;
+
+  const career = await getCareer(env.TUTOR_KV, user.sub);
+  if (!career || !examUnlocked(career, syllabus.code, found.topic.id)) {
+    return json(request, env, { error: "The Editor's desk opens once this topic has three stars." }, 403);
+  }
+  const limits = { requests: num(env.DAILY_REQUEST_LIMIT, 150), tokens: num(env.DAILY_TOKEN_LIMIT, 400000) };
+  if (isOverLimit(await getUsage(env.TUTOR_KV, user.sub), limits)) {
+    return json(request, env, { error: "limit", message: LIMIT_MESSAGE }, 429);
+  }
+  if ((await runsToday(env.TUTOR_KV, user.sub)) >= num(env.EXAM_DAILY_LIMIT, 4)) {
+    return json(request, env, { error: "limit", message: EXAM_LIMIT_MESSAGE }, 429);
+  }
+
+  const o = { syllabus, section: found.section, topic: found.topic, tier };
+  const reply = await askText(env, buildExamPrompt(o), "Write the questions now.", num(env.MAX_TOKENS_EXAM, 2500));
+  if (reply) await recordUsage(env.TUTOR_KV, user.sub, reply.tokens);
+  const questions = reply ? parseExamQuestions(reply.text) : [];
+  if (!questions.length) return json(request, env, { error: "The editor couldn't set questions that time. Please try again." }, 502);
+
+  const runId = newRunId();
+  await saveRun(env.TUTOR_KV, user.sub, runId, { code: syllabus.code, topicId: found.topic.id, tier, createdAt: new Date().toISOString(), questions });
+  await countRun(env.TUTOR_KV, user.sub);
+  return json(request, env, { runId, questions: publicQuestions(questions) });
+}
+
+/** Mark the three answers together, log the run for the parent view, and return marks with the schemes. */
+async function handleExamMark(request: Request, env: Env): Promise<Response> {
+  const user = await requireRole(request, env, "student");
+  if (!user) return json(request, env, { error: "Please log in again." }, 401);
+  const body = await readJson(request);
+  const rawAnswers = Array.isArray(body?.answers) ? body!.answers : null;
+  if (!body || !rawAnswers || rawAnswers.length > 10) return json(request, env, { error: "Bad request." }, 400);
+  const runId = String(body.runId ?? "");
+  const run = await takeRun(env.TUTOR_KV, user.sub, runId);
+  if (!run) return json(request, env, { error: "This set of questions has expired. Start a new one from the career map." }, 404);
+  const syllabus = findSyllabus(run.code)!;
+  const found = findTopic(syllabus, run.topicId)!;
+
+  // Same privacy filter and safeguarding check as the tutor chat.
+  const blocked = parseBlockedTerms(env.BLOCKED_TERMS);
+  const raw = run.questions.map((_, i) => String(rawAnswers[i] ?? "").slice(0, MAX_ANSWER).trim());
+  const cleaned = raw.map((a) => stripPii(a, blocked));
+  const answers = cleaned.map((r) => r.text);
+  const redactions = [...new Set(cleaned.flatMap((r) => r.redactions))];
+  const safety = assessSafety(raw.join("\n"));
+  const flags = safety === "none" ? [] : [safety === "high" ? "safeguarding-high" : "wellbeing"];
+  const retention = num(env.LOG_RETENTION_DAYS, 90);
+  const logBase = { id: `exam-${runId}`, userId: user.sub, subject: syllabus.subject, code: syllabus.code, topic: found.topic.title, tier: run.tier, mode: "editor's desk" };
+  const transcript = run.questions.map((q, i) => `Q${i + 1} [${q.marks}] ${q.q}\nAnswer: ${answers[i] || "(blank)"}`).join("\n\n");
+  const userLog: LogMessage = { role: "user", content: transcript, at: new Date().toISOString(), ...(redactions.length ? { redactions } : {}) };
+
+  if (safety === "high") {
+    await appendToLog(env.TUTOR_KV, logBase, [userLog, { role: "assistant", content: HIGH_RISK_REPLY, at: new Date().toISOString() }], flags, retention);
+    return json(request, env, { safeguarding: true, message: HIGH_RISK_REPLY });
+  }
+
+  const o = { syllabus, section: found.section, topic: found.topic, tier: run.tier };
+  const reply = await askText(env, buildMarkPrompt(o, run.questions, answers), "Mark the answers now.", num(env.MAX_TOKENS_EXAM_MARK, 1500));
+  if (reply) await recordUsage(env.TUTOR_KV, user.sub, reply.tokens);
+  const marks = reply ? parseMarks(reply.text, run.questions) : null;
+  if (!marks) {
+    // Put the run back so he can try marking again without losing his answers.
+    await saveRun(env.TUTOR_KV, user.sub, runId, run);
+    return json(request, env, { error: "The editor couldn't mark that just now. Please try again." }, 502);
+  }
+  const got = marks.reduce((n, m) => n + m.marks, 0);
+  const max = marks.reduce((n, m) => n + m.max, 0);
+  const summary = marks.map((m, i) => `Q${i + 1}: ${m.marks}/${m.max}. ${m.feedback}`).join("\n") + `\nTotal: ${got}/${max}`;
+  await appendToLog(env.TUTOR_KV, logBase, [userLog, { role: "assistant", content: summary, at: new Date().toISOString() }], flags, retention);
+  return json(request, env, {
+    got,
+    max,
+    results: marks.map((m, i) => ({ ...m, q: run.questions[i].q, answer: answers[i], scheme: run.questions[i].scheme, model: run.questions[i].model })),
+  });
+}
+
 /** A short note about the app from the student, for the parent view and the feedback log. */
 async function handleFeedback(request: Request, env: Env): Promise<Response> {
   const user = await requireRole(request, env, "student");
@@ -499,6 +619,10 @@ export default {
         case "GET /api/career":
         case "POST /api/career":
           return await handleCareer(request, env);
+        case "POST /api/exam/start":
+          return await handleExamStart(request, env);
+        case "POST /api/exam/mark":
+          return await handleExamMark(request, env);
         case "POST /api/feedback":
           return await handleFeedback(request, env);
         case "GET /api/parent/feedback":

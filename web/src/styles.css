@@ -201,7 +201,7 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 :root {
-  --space-top: #101a33; --space-bottom: #1c2c4d; --rock: radial-gradient(circle at 35% 30%, #8d8577, #5b544a 60%, #403a33);
+  --space-top: #101a33; --space-bottom: #1c2c4d; --rock: radial-gradient(ellipse at 30% 25%, #a9a59e, #75716b 40%, #4a4743 75%, #2f2d2b);
   --rock-text: #fffdf7; --good: #3fbf86; --bad: #e8806d;
 }
 .arcade-stage { flex: 1; display: flex; min-height: 0; margin: -16px; }
@@ -240,22 +240,34 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
   transform: translateY(calc(var(--fall) * (100cqh - 100% - 64px)));
 }
 .arcade-field { container-type: size; }
+/* A crater: dark pit, thin lit rim on its lower-right edge (the light comes from the top left). */
 .rock {
-  position: relative; border: none; color: var(--rock-text); background: var(--rock);
-  border-radius: 46% 54% 52% 48% / 55% 45% 55% 45%; min-height: 76px; padding: 14px 14px 14px 30px;
+  --c1: 82% 72%; --c2: 14% 78%; --c3: 70% 18%; --c4: 92% 40%;
+  --crater: rgba(28, 26, 24, 0.55); --rim: rgba(255, 255, 255, 0.16);
+  position: relative; border: none; color: var(--rock-text);
+  background:
+    radial-gradient(circle 9px at var(--c1), var(--crater) 0 5px, rgba(0,0,0,0.25) 6px, var(--rim) 7px 8px, transparent 9px),
+    radial-gradient(circle 6px at var(--c2), var(--crater) 0 3px, var(--rim) 4px 5px, transparent 6px),
+    radial-gradient(circle 5px at var(--c3), var(--crater) 0 2px, var(--rim) 3px 4px, transparent 5px),
+    radial-gradient(circle 4px at var(--c4), var(--crater) 0 2px, var(--rim) 3px, transparent 4px),
+    radial-gradient(circle 14px at 22% 30%, rgba(255,255,255,0.08), transparent),
+    var(--rock);
+  border-radius: 58% 42% 63% 37% / 44% 62% 38% 56%; min-height: 76px; padding: 14px 14px 14px 30px;
   font-size: 15px; line-height: 1.3; text-align: center; overflow-wrap: anywhere;
-  box-shadow: inset -6px -8px 0 rgba(0,0,0,0.18), 0 4px 14px rgba(0,0,0,0.35);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+  /* shadowed underside and a faint lit edge make it read as a lumpy ball rather than a flat blob */
+  box-shadow: inset -10px -12px 16px rgba(0,0,0,0.45), inset 5px 6px 8px rgba(255,255,255,0.14), 0 4px 14px rgba(0,0,0,0.35);
   transition: transform 0.25s, opacity 0.3s, box-shadow 0.2s;
 }
-.rock-1 { border-radius: 55% 45% 48% 52% / 46% 56% 44% 54%; }
-.rock-2 { border-radius: 50% 50% 44% 56% / 58% 48% 52% 42%; }
-.rock-3 { border-radius: 44% 56% 56% 44% / 50% 52% 48% 50%; }
+.rock-1 { border-radius: 40% 60% 45% 55% / 60% 40% 62% 38%; --c1: 16% 70%; --c2: 86% 78%; --c3: 28% 16%; --c4: 6% 40%; }
+.rock-2 { border-radius: 65% 35% 50% 50% / 52% 66% 34% 48%; --c1: 78% 26%; --c2: 20% 82%; --c3: 90% 76%; --c4: 60% 88%; }
+.rock-3 { border-radius: 47% 53% 36% 64% / 38% 55% 45% 62%; --c1: 12% 30%; --c2: 74% 84%; --c3: 88% 22%; --c4: 34% 88%; }
 .arcade-field:not(.still) .rock-0 { animation: bob 3.1s ease-in-out infinite; }
 .arcade-field:not(.still) .rock-1 { animation: bob 3.6s ease-in-out infinite reverse; }
 .arcade-field:not(.still) .rock-2 { animation: bob 3.3s ease-in-out 0.4s infinite; }
 .arcade-field:not(.still) .rock-3 { animation: bob 3.9s ease-in-out 0.2s infinite reverse; }
 @keyframes bob { 50% { transform: translateY(5px) rotate(1.2deg); } }
-.rock:hover:not(:disabled), .rock:focus-visible { box-shadow: inset -6px -8px 0 rgba(0,0,0,0.18), 0 0 0 3px #ffd77a; outline: none; }
+.rock:hover:not(:disabled), .rock:focus-visible { box-shadow: inset -10px -12px 16px rgba(0,0,0,0.45), inset 5px 6px 8px rgba(255,255,255,0.14), 0 0 0 3px #ffd77a; outline: none; }
 .rock-key {
   position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 700;
   width: 18px; height: 18px; line-height: 18px; border-radius: 50%; background: rgba(255,255,255,0.18);
@@ -263,8 +275,8 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .rock:disabled { cursor: default; }
 .rock.hit { animation: blast 0.6s forwards !important; background: radial-gradient(circle, #fff6c9, var(--good) 70%); }
 @keyframes blast { 40% { transform: scale(1.12); } 100% { transform: scale(1.3); opacity: 0; } }
-.rock.reveal { background: radial-gradient(circle at 35% 30%, #74d9ab, var(--good)); color: #06261a; animation: none !important; }
-.rock.miss { background: radial-gradient(circle at 35% 30%, #f2a493, var(--bad)); color: #2b0d07; animation: none !important; }
+.rock.reveal { text-shadow: none; background: radial-gradient(circle at 35% 30%, #74d9ab, var(--good)); color: #06261a; animation: none !important; }
+.rock.miss { text-shadow: none; background: radial-gradient(circle at 35% 30%, #f2a493, var(--bad)); color: #2b0d07; animation: none !important; }
 .rock.fade { opacity: 0.25; }
 .arcade-field.still .rock.hit { animation: none !important; }
 .arcade-flash {

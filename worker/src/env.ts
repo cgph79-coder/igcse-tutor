@@ -29,6 +29,10 @@ export interface Env {
   DAILY_REQUEST_LIMIT?: string;
   DAILY_TOKEN_LIMIT?: string;
   LOG_RETENTION_DAYS?: string;
+  /** Editor's desk runs (exam-style questions marked by the tutor) allowed per UK day. */
+  EXAM_DAILY_LIMIT?: string;
+  MAX_TOKENS_EXAM?: string;
+  MAX_TOKENS_EXAM_MARK?: string;
 }
 
 export function num(value: string | undefined, fallback: number): number {

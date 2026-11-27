@@ -126,3 +126,39 @@ export async function postCareer(token: string, career: unknown): Promise<unknow
   if (!res.ok) throw await errorFrom(res);
   return ((await res.json()) as { career: unknown }).career;
 }
+
+export interface ExamQuestionPublic {
+  q: string;
+  marks: number;
+  command: string;
+}
+
+export interface ExamResult {
+  q: string;
+  answer: string;
+  marks: number;
+  max: number;
+  feedback: string;
+  scheme: string[];
+  model: string;
+}
+
+async function postJson<T>(path: string, token: string, body: unknown): Promise<T> {
+  const res = await fetch(WORKER_URL + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await errorFrom(res);
+  return res.json() as Promise<T>;
+}
+
+/** Editor's desk: three exam-style questions for a topic at ★★★ (mark schemes stay on the Worker). */
+export function startExam(token: string, req: { code: string; topicId: string; tier: string | null }) {
+  return postJson<{ runId: string; questions: ExamQuestionPublic[] }>("/api/exam/start", token, req);
+}
+
+export function markExam(token: string, runId: string, answers: string[]) {
+  return postJson<{ got: number; max: number; results: ExamResult[] } | { safeguarding: true; message: string }>(
+    "/api/exam/mark", token, { runId, answers });
+}

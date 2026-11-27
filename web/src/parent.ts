@@ -5,7 +5,7 @@ import { WORKER_URL } from "./config";
 import { renderMarkdown } from "./render";
 import { el, initTheme } from "./ui";
 import { startUpdateCheck } from "./update-check";
-import { cleanCareer, coverage, followUps, nextRankNeeds, rankOf } from "../../shared/career";
+import { cleanCareer, coverage, examPasses, followUps, nextRankNeeds, rankOf } from "../../shared/career";
 import { findSyllabus, findTopic } from "../../syllabus/index";
 import { EXAM_DATE } from "./config";
 
@@ -169,11 +169,12 @@ function careerSection(raw: unknown): HTMLElement[] {
   if (!c || !Object.keys(c.topics).length) return [];
   const next = nextRankNeeds(c);
   const last = Object.values(c.topics).reduce((m, t) => (t.last > m ? t.last : m), "");
+  const passes = examPasses(c);
   const rows = coverage(c, EXAM_DATE).map((sc) =>
     el("div", { class: "focus-day" },
       el("div", { class: "focus-day-head" },
         el("span", {}, findSyllabus(sc.code)?.subject ?? sc.code),
-        el("span", { class: "meta" }, `${sc.atGrade[0]}/${sc.topics} started · ★★ ${sc.atGrade[1]} · ★★★ ${sc.atGrade[2]}`),
+        el("span", { class: "meta" }, `${sc.atGrade[0]}/${sc.topics} started · ★★ ${sc.atGrade[1]} · ★★★ ${sc.atGrade[2]}` + (passes[sc.code] ? ` · ✍ ${passes[sc.code]}` : "")),
       ),
       sc.behind ? el("div", { class: "flag" }, "Behind the pace for the exams") : null,
     ),
@@ -190,7 +191,7 @@ function careerSection(raw: unknown): HTMLElement[] {
       ...rows,
       weak.length ? el("div", { class: "meta" }, `Needs a follow-up: ${weak.join("; ")}.`) : null,
     ),
-    el("p", { class: "meta" }, "Each topic has three levels (★); he clears one with 80%+ on a finished run. Only progress is stored, nothing he types."),
+    el("p", { class: "meta" }, "Each topic has three levels (★); he clears one with 80%+ on a finished run. ✍ counts topics where he scored 70%+ on exam-style questions at the Editor's desk; those answers appear in Sessions below as \"editor's desk\". Only progress is stored for the career itself."),
   ];
 }
 

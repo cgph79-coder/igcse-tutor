@@ -21,6 +21,8 @@ export interface TopicCareer {
   last: string;
   /** Fraction correct on the last run, 0–1. */
   lastScore: number;
+  /** Best mark at the Editor's desk (exam-style written answers), 0–1, if attempted. */
+  exam?: number;
 }
 
 export interface Career {
@@ -32,6 +34,10 @@ export interface Career {
 }
 
 export const CLEAR_FRACTION = 0.8;
+/** The Editor's desk (exam-style questions marked by the tutor) opens on a topic at this grade. */
+export const EXAM_UNLOCK_GRADE: Grade = 3;
+/** A mark at or above this share of the marks counts as an Editor's desk pass (✍ on the map). */
+export const EXAM_PASS = 0.7;
 /** A topic needs a follow-up story when its last run went badly and it hasn't been played for this long. */
 export const FOLLOW_UP_BELOW = 0.6;
 export const FOLLOW_UP_AFTER_DAYS = 2;
@@ -88,11 +94,13 @@ export function cleanCareer(raw: unknown, now = new Date()): Career | null {
     const runs = Number(t.runs);
     const lastScore = Number(t.lastScore);
     if (![0, 1, 2, 3].includes(grade) || !Number.isInteger(runs) || runs < 0) continue;
+    const exam = Number(t.exam);
     topics[key] = {
       grade: grade as Grade,
       runs: Math.min(runs, 100000),
       last: isoOr(t.last, nowIso),
       lastScore: Number.isFinite(lastScore) ? Math.min(1, Math.max(0, lastScore)) : 0,
+      ...(t.exam !== undefined && Number.isFinite(exam) ? { exam: Math.min(1, Math.max(0, exam)) } : {}),
     };
   }
   return { v: 1, started: isoOr(r.started, nowIso), updated: isoOr(r.updated, nowIso), topics };
@@ -113,11 +121,13 @@ export function mergeCareers(a: Career | null, b: Career | null): Career {
       continue;
     }
     const recent = tb.last > ta.last ? tb : ta;
+    const exam = Math.max(ta.exam ?? -1, tb.exam ?? -1);
     topics[key] = {
       grade: Math.max(ta.grade, tb.grade) as Grade,
       runs: Math.max(ta.runs, tb.runs),
       last: recent.last,
       lastScore: recent.lastScore,
+      ...(exam >= 0 ? { exam } : {}),
     };
   }
   return {
@@ -166,6 +176,34 @@ export function recordRun(
   const was = rankIndex(c);
   const is = rankIndex(career);
   return { career, cleared, newGrade: grade, promotedTo: is > was ? RANKS[is] : null };
+}
+
+export function examUnlocked(c: Career, code: string, topicId: string): boolean {
+  return gradeOf(c, code, topicId) >= EXAM_UNLOCK_GRADE;
+}
+
+/** Record a marked Editor's desk attempt (best mark is kept). */
+export function recordExam(c: Career, code: string, topicId: string, fraction: number, now = new Date()): { career: Career; best: boolean } {
+  const key = topicKey(code, topicId);
+  const before = c.topics[key];
+  if (!before) return { career: c, best: false };
+  const f = Math.min(1, Math.max(0, fraction));
+  const best = before.exam === undefined || f > before.exam;
+  return {
+    career: { ...c, updated: now.toISOString(), topics: { ...c.topics, [key]: { ...before, exam: best ? f : before.exam } } },
+    best,
+  };
+}
+
+/** Topics with an Editor's desk pass, per syllabus code. */
+export function examPasses(c: Career): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [key, t] of Object.entries(c.topics)) {
+    if ((t.exam ?? 0) < EXAM_PASS) continue;
+    const code = key.split(":")[0];
+    out[code] = (out[code] ?? 0) + 1;
+  }
+  return out;
 }
 
 /** Topics at or above a grade, per syllabus code. */

@@ -75,6 +75,11 @@ const SUBJECT_GUIDANCE: Record<string, string> = {
   ].join("\n"),
 };
 
+/** Exam technique notes for a subject (used by the Editor's desk too). */
+export function subjectGuidance(code: string): string {
+  return SUBJECT_GUIDANCE[code] ?? "";
+}
+
 function modeInstructions(o: PromptOptions): string {
   switch (o.mode) {
     case "learn":

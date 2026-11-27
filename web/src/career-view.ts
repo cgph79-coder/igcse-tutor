@@ -5,6 +5,7 @@
 import { SYLLABUSES, findSyllabus, findTopic } from "../../syllabus/index";
 import {
   coverage,
+  examUnlocked,
   followUps,
   gradeOf,
   levelFor,
@@ -17,6 +18,7 @@ import {
 import { EXAM_DATE } from "./config";
 import { deskFor } from "./games/journey-content";
 import { el } from "./ui";
+import { hasExamDraft } from "./exam-view";
 
 const DESK_NAMES = { history: "History desk", science: "Science desk", tech: "Tech desk", data: "Data desk" } as const;
 
@@ -48,7 +50,7 @@ export function careerSummary(c: Career, openMap: () => void): HTMLElement {
 export function renderCareerMap(
   panel: HTMLElement,
   c: Career,
-  o: { onPlay(code: string, topicId: string): void; onBack(): void },
+  o: { onPlay(code: string, topicId: string): void; onEditor(code: string, topicId: string): void; onBack(): void },
 ) {
   const back = el("button", { type: "button", class: "icon-btn" }, "Arcade");
   back.addEventListener("click", o.onBack);
@@ -78,12 +80,21 @@ export function renderCareerMap(
         el("div", { class: "career-section-title" }, sec.title),
         ...sec.topics.map((t) => {
           const g = gradeOf(c, s.code, t.id);
+          const exam = c.topics[`${s.code}:${t.id}`]?.exam;
+          let editor: HTMLElement | null = null;
+          if (examUnlocked(c, s.code, t.id)) {
+            editor = el("button", { type: "button", class: "icon-btn editor-btn" }, hasExamDraft(s.code, t.id) ? "✍ Continue" : "✍ Editor");
+            editor.addEventListener("click", () => o.onEditor(s.code, t.id));
+          }
           return el("div", { class: "career-row" },
             el("div", { class: "career-row-text" },
               el("span", {}, t.title),
-              el("span", { class: "meta" }, g === 3 ? `${stars(g)} mastered` : `${stars(g)} · next run: level ${levelFor(c, s.code, t.id)}`),
+              el("span", { class: "meta" },
+                g === 3
+                  ? `${stars(g)} mastered` + (exam !== undefined ? ` · ✍ best ${Math.round(exam * 100)}%` : " · Editor's desk open")
+                  : `${stars(g)} · next run: level ${levelFor(c, s.code, t.id)}`),
             ),
-            play(s.code, t.id, g === 3 ? "Replay" : "Play"),
+            el("div", { class: "career-row-actions" }, editor, play(s.code, t.id, g === 3 ? "Replay" : "Play")),
           );
         }),
       ),
@@ -111,7 +122,8 @@ export function renderCareerMap(
       weeks > 0 ? el("p", { class: "meta" }, `${weeks} weeks until your exams.`) : null,
     ),
     el("p", { class: "meta" },
-      "Every topic has three levels. Score 80% or more on a finished Dispatches run to clear a level and earn a star. Promotion needs stars across your subjects."),
+      "Every topic has three levels. Score 80% or more on a finished Dispatches run to clear a level and earn a star. Promotion needs stars across your subjects. " +
+        "At ★★★ a topic opens the ✍ Editor's desk: exam-style questions marked by the tutor."),
     follow.length ? el("div", { class: "card career-follow" }, el("strong", {}, "Your editor wants follow-ups on:"), ...follow) : null,
     ...desks,
   ].filter((n): n is HTMLElement => n !== null));

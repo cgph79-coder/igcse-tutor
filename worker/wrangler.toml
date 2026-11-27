@@ -40,3 +40,6 @@ MAX_HISTORY_CHARS = "24000"     # and the history is capped at this many charact
 DAILY_REQUEST_LIMIT = "150"     # messages per student per day (UK time)
 DAILY_TOKEN_LIMIT = "400000"    # tokens per student per day
 LOG_RETENTION_DAYS = "90"
+EXAM_DAILY_LIMIT = "4"          # Editor's desk runs per day (exam-style questions marked by the tutor; 2 model calls each)
+MAX_TOKENS_EXAM = "2500"        # writing the 3 questions and their mark schemes
+MAX_TOKENS_EXAM_MARK = "1500"   # marking the 3 answers

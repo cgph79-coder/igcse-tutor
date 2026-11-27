@@ -1,7 +1,7 @@
 import "katex/dist/katex.min.css";
 import "./styles.css";
 import { SYLLABUSES, findSyllabus, findTopic, type Syllabus } from "../../syllabus/index";
-import { ApiError, login, streamChat, type ChatMessage } from "./api";
+import { ApiError, loginAs, streamChat, type ChatMessage } from "./api";
 import { extractScore, renderMarkdown } from "./render";
 import { LocalProgressStore, prefs, type ProgressStore } from "./storage";
 import { applyTheme, el, initTheme, nextTheme } from "./ui";
@@ -149,7 +149,11 @@ function loginView() {
     err.textContent = "";
     btn.setAttribute("disabled", "");
     try {
-      state.token = await login("/api/login", { passcode: input.value });
+      const who = await loginAs("/api/login", { passcode: input.value });
+      // A different user on this device (e.g. a parent testing): don't mix their careers.
+      if ((prefs.get("user") ?? "student") !== who.user) prefs.set("career:v1", null);
+      prefs.set("user", who.user);
+      state.token = who.token;
       prefs.set("token", state.token);
       render();
       void flushFocus(state.token);
@@ -186,6 +190,7 @@ function appView() {
 
   const header = el("header", { class: "top" },
     el("h1", {}, el("span", { class: "brand-long" }, "IGCSE "), el("span", {}, "Tutor")),
+    prefs.get("user") === "tester" ? el("span", { class: "tester-badge", title: "Logged in with the tester passcode: a separate user" }, "Tester") : null,
     newBtn, arcadeBtn, progressBtn, timerButton(), themeBtn,
   );
   const bar = timerBar();

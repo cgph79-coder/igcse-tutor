@@ -70,6 +70,11 @@ import {
 import { findSyllabus, findTopic } from "../../syllabus/index";
 
 const STUDENT_ID = "student"; // single user for now; becomes a real user id with accounts
+/**
+ * A parent testing the app with TESTER_PASSCODE: a separate user with their own career, limits
+ * and logs (labelled in the parent view), and the Editor's desk open on every topic.
+ */
+const TESTER_ID = "tester";
 const STUDENT_TOKEN_TTL = 60 * 60 * 24 * 30; // 30 days
 const PARENT_TOKEN_TTL = 60 * 60 * 12; // 12 hours
 const MODES: Mode[] = ["learn", "practise", "mark", "quiz"];
@@ -126,17 +131,17 @@ async function handleLogin(request: Request, env: Env, role: Role): Promise<Resp
   const body = await readJson(request);
   const expected = role === "student" ? env.TUTOR_PASSCODE : env.PARENT_PASSWORD;
   const submitted = role === "student" ? body?.passcode : body?.password;
+  let sub = role === "student" ? STUDENT_ID : "parent";
   if (!(await checkSecret(submitted, expected))) {
-    await recordLoginFailure(env.TUTOR_KV, ip);
-    return json(request, env, { error: "That passcode isn't right." }, 401);
+    // The tester passcode logs in as a separate student user.
+    if (role === "student" && (await checkSecret(submitted, env.TESTER_PASSCODE))) sub = TESTER_ID;
+    else {
+      await recordLoginFailure(env.TUTOR_KV, ip);
+      return json(request, env, { error: "That passcode isn't right." }, 401);
+    }
   }
-  const token = await issueToken(
-    env.TOKEN_SECRET,
-    role === "student" ? STUDENT_ID : "parent",
-    role,
-    role === "student" ? STUDENT_TOKEN_TTL : PARENT_TOKEN_TTL,
-  );
-  return json(request, env, { token });
+  const token = await issueToken(env.TOKEN_SECRET, sub, role, role === "student" ? STUDENT_TOKEN_TTL : PARENT_TOKEN_TTL);
+  return json(request, env, role === "student" ? { token, user: sub } : { token });
 }
 
 async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -453,7 +458,7 @@ async function handleExamStart(request: Request, env: Env): Promise<Response> {
     syllabus.tiers && typeof body.tier === "string" && syllabus.tiers.includes(body.tier) ? body.tier : syllabus.defaultTier;
 
   const career = await getCareer(env.TUTOR_KV, user.sub);
-  if (!career || !examUnlocked(career, syllabus.code, found.topic.id)) {
+  if (user.sub !== TESTER_ID && (!career || !examUnlocked(career, syllabus.code, found.topic.id))) {
     return json(request, env, { error: "The Editor's desk opens once this topic has three stars." }, 403);
   }
   const limits = { requests: num(env.DAILY_REQUEST_LIMIT, 150), tokens: num(env.DAILY_TOKEN_LIMIT, 400000) };

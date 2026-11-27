@@ -371,6 +371,11 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .journey-next { justify-self: start; }
 .journey-part { margin: -6px 0 0; font-weight: 600; }
 
+.tester-badge {
+  display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: var(--warn-bg); color: var(--text); border: 1px solid var(--border); vertical-align: middle;
+}
+
 /* ---- Dispatches career ---- */
 .career-summary { display: flex; align-items: center; gap: 12px; }
 .career-bar { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; margin: 6px 0 2px; }

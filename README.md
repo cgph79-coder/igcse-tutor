@@ -100,6 +100,14 @@ npx wrangler secret put PARENT_PASSWORD --cwd worker
 npx wrangler secret put TOKEN_SECRET --cwd worker
 ```
 
+**Optional: a tester login for you.** To try the app as yourself without touching his progress, set a third passcode (different from the other two):
+
+```bash
+npx wrangler secret put TESTER_PASSCODE --cwd worker
+```
+
+Logging in with it makes you a separate user, "tester": your own career, daily limits and Editor's desk runs (which open on every topic, so you can try them straight away). Your sessions are labelled **Tester** in the parent view, and a Tester badge shows in the app. On a device he also uses, logging in as the other user clears that device's copy of the career; the copy on the Worker is kept. To remove the tester login, run `npx wrangler secret delete TESTER_PASSCODE --cwd worker`.
+
 For `TOKEN_SECRET`, paste a long random string. You can make one with:
 
 ```bash

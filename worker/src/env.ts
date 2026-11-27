@@ -7,6 +7,8 @@ export interface Env {
   /** Key for the photo-reading model; falls back to LLM_API_KEY only if both use the same provider. */
   LLM_VISION_API_KEY?: string;
   TUTOR_PASSCODE: string;
+  /** Optional second passcode for a parent testing the app as their own, separate user ("tester"). */
+  TESTER_PASSCODE?: string;
   PARENT_PASSWORD: string;
   TOKEN_SECRET: string;
   BLOCKED_TERMS?: string;

@@ -369,6 +369,7 @@ label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .journey-verdict.bad { border-left-color: var(--danger); }
 .journey-delta { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
 .journey-next { justify-self: start; }
+.journey-part { margin: -6px 0 0; font-weight: 600; }
 
 /* ---- study timer ---- */
 .timer-btn { min-width: 36px; }

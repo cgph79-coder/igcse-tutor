@@ -18,6 +18,8 @@ import {
   currentCard,
   daysLeft,
   isFinalStop,
+  isLastCardAtStop,
+  isTwoPart,
   MAX_STAMINA,
   MAX_TRUST,
   newJourney,
@@ -27,7 +29,8 @@ import {
   type JourneyState,
 } from "./journey-core";
 import type { Effect } from "./journey-content";
-import { clearJourney, loadJourney, saveJourney } from "./journey-save";
+import { clearJourney, loadJourney, loadSeenScenes, saveJourney, saveSeenScenes } from "./journey-save";
+import { deskFor } from "./journey-content";
 import type { GameOptions, StartGame } from "./types";
 
 const LABELS = ["A", "B", "C", "D"];
@@ -57,7 +60,11 @@ export const startJourney: StartGame = (stage, opts: GameOptions) => {
   let state: JourneyState;
   const saved = opts.resume ? loadJourney(t.code, t.topicId) : null;
   try {
-    state = saved ?? newJourney({ ...t, cards: opts.questions });
+    if (saved) state = saved;
+    else {
+      state = newJourney({ ...t, cards: opts.questions, seen: loadSeenScenes(deskFor(t.code)) });
+      saveSeenScenes(state.desk, state.seenScenes);
+    }
   } catch {
     stage.replaceChildren(el("p", { class: "err" }, "Not enough cards for a journey on this topic yet. Try again in a moment."));
     return () => {};
@@ -151,7 +158,7 @@ export const startJourney: StartGame = (stage, opts: GameOptions) => {
           el("p", {}, "Your story: ", el("em", {}, state.topicTitle)),
           el("p", { class: "meta" },
             `You have ${state.deadline} days. Every stop has a fact to check: get it right and the editor trusts you more. ` +
-              "Stuck? A contact can rule out two wrong answers. Run out of energy or trust and you're sent home."),
+              "Some stops have a follow-up: get both right for a scoop. Stuck? A contact can rule out two wrong answers. Run out of energy or trust and you're sent home."),
         ),
         continueButton("Start the assignment", () => {
           fresh = false;
@@ -178,6 +185,7 @@ export const startJourney: StartGame = (stage, opts: GameOptions) => {
       contact.addEventListener("click", () => set(askContact(state)));
       parts.push(
         el("p", { class: "journey-scene" }, sceneText(state)),
+        isTwoPart(state) ? el("p", { class: "journey-part meta" }, `Part ${state.step + 1} of 2`) : null,
         el("div", { class: "journey-card" }, inline(card.q, "div", "journey-q"), el("div", { class: "journey-options" }, ...options)),
         el("div", { class: "journey-help" }, contact),
       );
@@ -191,9 +199,12 @@ export const startJourney: StartGame = (stage, opts: GameOptions) => {
           last.correct ? null : el("span", {}, "The answer is ", inline(card.options[card.answer], "strong"), ". "),
           card.explain ? inline(card.explain) : null,
         ),
-        el("p", { class: "journey-scene" }, state.message),
+        state.message ? el("p", { class: "journey-scene" }, state.message) : null,
         deltaLine(state.delta),
-        continueButton(isFinalStop(state) ? "File your story" : "Continue", () => set(continueFromOutcome(state))),
+        continueButton(
+          !isLastCardAtStop(state) ? "Next detail" : isFinalStop(state) ? "File your story" : "Continue",
+          () => set(continueFromOutcome(state)),
+        ),
       );
     } else if (state.phase === "camp") {
       parts.push(

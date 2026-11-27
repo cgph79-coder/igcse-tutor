@@ -10,6 +10,7 @@ Quick fixes from using the app. **Check this first at the start of each work ses
 |---|------|------|------|----------|------|--------|
 | F1 | 2026-11-26 | Student (via parent) | Arcade | Not enough time to read the question before the rocks start falling. | S | done: reading pause of 2–6 s with a progress bar (PR #4) |
 | F2 | 2026-11-26 | Card review | Arcade cards | 2 wrong and 2 weak History cards out of 26 (see "Card quality" below). | M | done: 4 cards removed from the live bank; every new batch is now checked before use (PR #5) |
+| F3 | 2026-11-26 | Student (app) | Arcade | The rocks could look more like asteroids instead of dark beige blobs. | S | done: grey cratered rocks with lumpy outlines and shading (CSS only, `web/src/styles.css`) |
 
 **Adding feedback:** add a row with the next number. Write what happened in the user's words, not the fix. Keep fixed items for a month, then move them to the bottom of this file's history (git keeps the rest).
 

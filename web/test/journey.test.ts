@@ -12,11 +12,13 @@ import {
   daysLeft,
   newJourney,
   parseSave,
+  pickScenes,
   sceneText,
+  scenePool,
   travelChoices,
   type JourneyState,
 } from "../src/games/journey-core";
-import { SETTINGS } from "../src/games/journey-content";
+import { SCENES, SETTINGS, SUBJECT_SETTINGS } from "../src/games/journey-content";
 
 const card = (i: number): McqQuestion => ({ q: `Q${i}?`, options: ["a", "b", "c", "d"], answer: i % 4, explain: `Fact ${i}`, level: 1 });
 const cards = (n: number) => Array.from({ length: n }, (_, i) => card(i));
@@ -27,16 +29,20 @@ const start = (n = 10, sectionId = "germany") =>
 const right = (s: JourneyState) => answerCard(s, currentCard(s).answer);
 const wrong = (s: JourneyState) => answerCard(s, (currentCard(s).answer + 1) % 4);
 
-/** Answer, press on and take the local train, until the last stop. */
+/** Answer, press on and take the local train (or whatever is affordable), until the end. */
 function playThrough(s: JourneyState, answer: (s: JourneyState) => JourneyState) {
-  for (;;) {
+  for (let guard = 0; guard < 100; guard++) {
     s = answer(s);
     if (s.phase === "ended") return s;
     s = continueFromOutcome(s);
     if (s.phase === "ended") return s;
+    if (s.phase === "scene") continue; // a follow-up card at the same stop
     s = chooseCamp(s, "move");
-    s = chooseTravel(s, "local", never);
+    const mode = travelChoices(s).find((m) => m.id === "local" && !m.disabled) ?? travelChoices(s).find((m) => !m.disabled)!;
+    s = chooseTravel(s, mode.id, never);
+    if (s.phase === "ended") return s;
   }
+  throw new Error("Journey never ended");
 }
 
 describe("journey setup", () => {
@@ -45,8 +51,9 @@ describe("journey setup", () => {
     expect(s.stops).toEqual(SETTINGS.germany.route);
     expect(s.stops.at(-1)).toBe("Berlin");
     expect(sceneText(s)).toContain("Munich");
-    expect(s.sceneIds.at(-1)).toBe("front-page");
-    expect(new Set(s.sceneIds).size).toBe(10);
+    expect(s.plan.at(-1)?.scene).toBe("front-page");
+    expect(new Set(s.plan.map((p) => p.scene)).size).toBe(10);
+    expect(s.plan.every((p) => p.cards.length === 1)).toBe(true); // 10 cards: no follow-ups
   });
 
   it("shortens the route (keeping the destination) when there are fewer cards", () => {
@@ -97,16 +104,16 @@ describe("playing", () => {
     expect(s.score).toBeGreaterThan(1000);
   });
 
-  it("too many wrong answers gets him recalled before the end", () => {
+  it("too many wrong answers ends the run early (recalled, or broke and worn out)", () => {
     const s = playThrough(start(), wrong);
-    expect(s.ending?.kind).toBe("recalled");
+    expect(["recalled", "sent-home"]).toContain(s.ending?.kind);
     expect(s.ending?.onRoute).toBe(true);
     expect(s.answers.length).toBeLessThan(10);
   });
 
   it("running out of energy sends him home", () => {
     let s = start();
-    s = { ...s, res: { ...s.res, stamina: 1 }, sceneIds: ["briefing", ...s.sceneIds.slice(1)] };
+    s = { ...s, res: { ...s.res, stamina: 1 }, plan: [{ scene: "briefing", cards: [0] }, ...s.plan.slice(1)] };
     s = wrong(s);
     expect(s.ending?.kind).toBe("sent-home");
   });
@@ -155,6 +162,92 @@ describe("camp and travel", () => {
   });
 });
 
+describe("desks and scenes", () => {
+  it("gives every subject its own setting and desk", () => {
+    const sci = newJourney({ code: "0973", sectionId: "physics", topicId: "x", topicTitle: "t", cards: cards(10) }, () => 0.3);
+    expect(sci.desk).toBe("science");
+    expect(sci.stops).toEqual(SUBJECT_SETTINGS["0973"].route);
+    expect(start().desk).toBe("history");
+  });
+
+  it("only uses scenes that suit the desk, and every scene has a unique id", () => {
+    expect(new Set(SCENES.map((x) => x.id)).size).toBe(SCENES.length);
+    for (const desk of ["history", "science", "tech", "data"] as const) {
+      const pool = scenePool(desk);
+      expect(pool.length).toBeGreaterThanOrEqual(25);
+      expect(pool.every((x) => !x.desks || x.desks.includes(desk))).toBe(true);
+    }
+  });
+
+  it("picks unseen scenes first, and starts a new cycle when they run out", () => {
+    const pool = ["a", "b", "c", "d", "e"];
+    const first = pickScenes(pool, 3, []);
+    expect(new Set(first.ids).size).toBe(3);
+    const second = pickScenes(pool, 3, first.seen);
+    // the two unseen ones are used, plus one from the old cycle
+    expect(second.ids.filter((id) => !first.ids.includes(id))).toHaveLength(2);
+    expect(second.seen).toHaveLength(1);
+    // fresh runs in a row don't repeat a scene until the pool is used up
+    let seen: string[] = [];
+    const used: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const r = newJourney({ code: "0977", sectionId: "germany", topicId: "w", topicTitle: "t", cards: cards(10), seen });
+      seen = r.seenScenes;
+      used.push(...r.plan.slice(0, -1).map((p) => p.scene));
+    }
+    expect(new Set(used).size).toBe(used.length);
+  });
+});
+
+describe("two-part stops", () => {
+  const twoPart = () => newJourney({ code: "0977", sectionId: "germany", topicId: "w", topicTitle: "t", cards: cards(13) }, () => 0.3);
+
+  it("uses spare cards as follow-ups in the middle of the route", () => {
+    const s = twoPart();
+    expect(s.plan).toHaveLength(10);
+    expect(s.plan.filter((p) => p.cards.length === 2)).toHaveLength(3);
+    expect(s.plan[0].cards).toHaveLength(1);
+    expect(s.plan.at(-1)?.cards).toEqual([12]); // the final stop gets the last (hardest) card
+    expect(s.plan.flatMap((p) => p.cards)).toEqual([...Array(13).keys()]);
+  });
+
+  function toTwoPart(s: JourneyState) {
+    const at = s.plan.findIndex((p) => p.cards.length === 2);
+    return { ...s, stop: at };
+  }
+
+  it("asks the follow-up, and gives a scoop bonus for both right", () => {
+    let s = toTwoPart(twoPart());
+    const trust = s.res.trust;
+    s = right(s);
+    expect(s.phase).toBe("outcome");
+    expect(s.delta).toEqual({});
+    s = continueFromOutcome(s);
+    expect(s.phase).toBe("scene");
+    expect(s.step).toBe(1);
+    expect(sceneText(s)).toMatch(/one more detail/);
+    s = right(s);
+    expect(s.message).toMatch(/scoop/);
+    expect(s.res.trust).toBeGreaterThan(trust);
+    expect(continueFromOutcome(s).phase).toBe("camp");
+  });
+
+  it("half right changes nothing", () => {
+    let s = toTwoPart(twoPart());
+    const before = s.res;
+    s = continueFromOutcome(right(s));
+    s = wrong(s);
+    expect(s.message).toMatch(/Half right/);
+    expect(s.res).toEqual(before);
+  });
+
+  it("all right through a run with follow-ups still lands the front page", () => {
+    const s = playThrough(twoPart(), right);
+    expect(s.answers).toHaveLength(13);
+    expect(s.ending?.kind).toBe("front-page");
+  });
+});
+
 describe("saving", () => {
   it("round-trips a run in progress and rejects finished or broken ones", () => {
     const s = right(start());
@@ -163,5 +256,15 @@ describe("saving", () => {
     expect(parseSave("{oops")).toBeNull();
     expect(parseSave(JSON.stringify({ ...s, cards: [] }))).toBeNull();
     expect(parseSave(null)).toBeNull();
+  });
+
+  it("upgrades a run saved by the first version", () => {
+    const { plan, step, desk, seenScenes, ...rest } = right(start());
+    void step; void desk; void seenScenes;
+    const v1 = { ...rest, v: 1, sceneIds: plan.map((p) => p.scene) };
+    const s = parseSave(JSON.stringify(v1));
+    expect(s?.v).toBe(2);
+    expect(s?.plan).toEqual(plan);
+    expect(s?.desk).toBe("history");
   });
 });

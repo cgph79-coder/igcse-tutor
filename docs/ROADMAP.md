@@ -53,11 +53,11 @@ It goes to `POST /api/feedback` (`worker/src/feedback.ts`): the same privacy fil
 **Synthesis (synthesis.com) as a reference:** public material says little about its game rules. What's described: fast, quick-thinking arcade games kept apart from tracked lessons; mastery before moving on; unlocking levels; and a "mistakes are expected" tone. We borrowed the level-up/unlock feel (sectors), mastery gating (8/10 to advance) and the tone on the results screen. Worth a hands-on look at their Arcade (free trial) before building the next games.
 Next: Lane runner, Defend the base, Speed tiles (see also item 1b, the Dispatches story game) (each a new `StartGame` in `web/src/games/` plus an entry in `GAMES`); simple badges; optional sound toggle; spot-check real generated questions for accuracy in the first week.
 
-## 1b. Story game: Dispatches (History text adventure)
+## 1b. Story game: Dispatches (text adventure)
 
 **Goal:** a slower, story-led way to use the same recall cards. It's a text adventure in the journey-survival genre (our own design and name). He plays a young correspondent for a fictional London paper, travelling a route through the period he's studying and checking one fact at every stop.
 
-**Status (Nov 2026): first version built, History (0977) only, one topic per run.**
+**Status (Nov 2026): first version built for History, one topic per run; phase 1 (below) opened it to every subject.**
 - **Files:** `web/src/games/journey-core.ts` holds the rules (pure and tested in `web/test/journey.test.ts`). `journey-content.ts` holds the routes, scenes, incidents and the game name (`GAME_NAME`). `journey.ts` is the screen and `journey-save.ts` the save.
 - **A run:** 10 stops (fewer if fewer cards come back; the destination is kept), one card per stop, easiest first. Resources: money, energy (out of 5), editor's trust (out of 6), contacts and days left (deadline 21 days for 10 stops). A right answer gains something and a wrong one costs something, depending on the scene. Between stops he can **press on**, **rest** (costs money, restores energy) or **write a quick piece** (earns money, costs energy). Then he picks how to travel: **express** (dear, fast), **local train**, or **hitch** (free, tiring, more road incidents).
 - **Contacts:** spending one rules out two wrong answers. The card is still marked correct if he then gets it right, but scores 50 instead of 100.
@@ -68,11 +68,43 @@ Next: Lane runner, Defend the base, Speed tiles (see also item 1b, the Dispatche
 - **Fits the Arcade:** uses the same `/api/quiz-questions` cards (no extra AI cost), results screen, "Learn this", "Report this card", Progress scores (mode `arcade`) and personal bests. No timer, so calm mode doesn't apply. Keys 1–4 / A–D work.
 - **Balance (simulated):** 70% of cards right gives a front page about 45% of the time. Half right gets him recalled about a quarter of the time.
 
-**Next:**
-- **Mixed runs:** one card from each topic in a section (e.g. the whole Germany depth study), using `buildRound` across topics. This needs a small Worker change (a list of topic ids, or a "section" option) and a section-level score in Progress.
-- **More subjects:** each needs a setting (an expedition for the sciences, a ship's computer for Computer Science, supplies and distances for Add Maths) in `journey-content.ts`, and an entry in the game's `subjects`.
-- **Richer story:** scenes tied to a topic (e.g. a Berlin hotel during hyperinflation for Weimar) would need checking like the cards. One option is for Claude to write a scene deck per topic once, run it through the checking pass, and bank it in KV.
-- Ask him for feedback after his first few runs: is the length right (about 10–15 minutes), and is it too easy or too hard?
+**Phase 1 (built, Nov 2026): variety and all subjects.**
+- **Every subject has a desk** at the paper, each with its own setting and route: History (one route per section, as above), Science (UK labs, hospitals and power stations, ending in London), Tech (European start-ups and data centres, ending in London) and Data for Add Maths (UK, ending in London).
+- **41 scenes.** 25 suit any desk, plus 3–4 for each desk, so each desk has about 28. Like the originals, none makes a subject claim. The game remembers which scenes he has seen on each desk (`journey:seen:<desk>` on the device) and doesn't repeat one until the rest have been used, which is about three runs.
+- **Two-part stops.** The game asks for 13 cards. The 3 spare cards become follow-ups at 3 stops in the middle. Both right is a **scoop** (the scene's reward plus 1 trust), one right changes nothing, and none right takes the usual penalty. The last stop always gets the last, hardest card.
+- **More road incidents** (9). Saves from the first version still load.
+- Balance (simulated, History and Data desks): 70% of cards right gives a front page about half the time, and 50% right gets him recalled about 9% of the time.
+
+## 1c. Dispatches career mode (planned)
+
+**Decided (Nov 2026):**
+- **One career across all subjects**, at one paper with four desks.
+- **Exam-style marking at the top rank.**
+- **The campaign is saved to the Worker** as well as the device. Only progress is saved, never anything he types.
+
+**How it would work:**
+- **Career map.** Every topic in every subject is an assignment (one 10–15 minute run, as now). Assignments unlock as he goes, and the map shows coverage per desk.
+- **Ranks track exam readiness:**
+
+  | Rank | Asks | Promotion |
+  |---|---|---|
+  | Cub reporter | level 1 cards (essentials) | 8/10 on a topic |
+  | Staff reporter | level 2 (finer detail) | mastery across a section |
+  | Senior correspondent | level 3 cards, plus mixed-topic assignments | mastery across several subjects |
+  | Editor | exam-style questions: short written answers marked by the tutor against mark-scheme principles and command words | strong marks over time |
+
+  Promotions need breadth across subjects, which mixes subjects the way revision should.
+- **Built-in revision.** Weak topics from Progress come back as "follow-up stories" a few days later.
+- **Paced to his exams.** The campaign runs to his exam date (June 2027) and gently flags a desk that's falling behind.
+- **Parent view** shows his rank and coverage per subject.
+- **Saving.** A new `POST/GET /api/career` stores the career state (`career:<user>` in KV, small JSON: ranks, mastery per topic, unlocked assignments, scenes seen). Like `focus.ts`, it holds progress only, never what he types. The device keeps a copy and syncs it, so it works offline. The server copy survives a new phone, a cleared browser or the installed iPhone app.
+- **Editor rank costs.** Each question is a model call (marking), so there's a daily cap like the tutor's. The questions come from the existing Practise mode prompt with a shorter answer format.
+
+**Phases left:**
+- **2.** Career shell: desks, map, ranks, the campaign saved to the Worker, rank in the parent view.
+- **3.** The Editor rank with marked exam-style answers.
+- **4.** Topic-specific scenes written by Claude, checked like the cards and banked in KV.
+- **Later:** new challenge types that need new card formats (put events in order, pick the source to trust, odd one out). These need a change to the card prompt on the Worker.
 
 ## 2. Pomodoro study timer
 

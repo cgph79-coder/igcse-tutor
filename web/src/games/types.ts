@@ -45,6 +45,8 @@ export interface GameInfo {
   subjects?: string[];
   /** False for games without speed sectors (story games). */
   sectors?: boolean;
+  /** Cards to ask for (the Worker allows up to 15); the round length if missing. */
+  cards?: number;
   /** Shown while the cards load. */
   loading?: string;
   /** True if there's a saved run for this topic that can be resumed. */

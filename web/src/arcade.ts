@@ -12,6 +12,7 @@ import type { GameInfo, GameResult } from "./games/types";
 import { feedbackButton, openFeedback } from "./feedback";
 import { loadJourney } from "./games/journey-save";
 import { GAME_NAME } from "./games/journey-content";
+import { CARDS_WANTED } from "./games/journey-core";
 
 const ROUND_LENGTH = 10;
 /**
@@ -34,9 +35,9 @@ export const GAMES: GameInfo[] = [
   {
     id: "journey",
     name: GAME_NAME,
-    blurb: "A text adventure. Travel as a newspaper correspondent and check a fact at every stop to get your story on the front page.",
-    subjects: ["0977"],
+    blurb: "A text adventure. Travel as a young newspaper reporter and check a fact at every stop to get your story on the front page.",
     sectors: false,
+    cards: CARDS_WANTED,
     loading: "Packing your bags",
     hasSave: (code, topicId) => loadJourney(code, topicId) !== null,
     load: () => import("./games/journey").then((m) => m.startJourney),
@@ -228,7 +229,7 @@ export function mountArcade(panel: HTMLElement, ctx: ArcadeContext): () => void 
       [questions, start] = await Promise.all([
         // A saved run already holds its cards.
         resume ? Promise.resolve([]) :
-          fetchQuizQuestions(ctx.token, { code: s.code, topicId: found.topic.id, tier: tierFor(s), count: ROUND_LENGTH }),
+          fetchQuizQuestions(ctx.token, { code: s.code, topicId: found.topic.id, tier: tierFor(s), count: game.cards ?? ROUND_LENGTH }),
         game.load(),
       ]);
     } catch (ex) {

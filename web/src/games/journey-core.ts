@@ -8,10 +8,26 @@
  */
 import type { McqQuestion } from "../api";
 import type { AnswerRecord } from "./types";
-import { DEFAULT_SETTING, FINAL_SCENE, INCIDENTS, SCENES, SETTINGS, type Effect, type Scene } from "./journey-content";
+import {
+  deskFor,
+  FINAL_SCENE,
+  FOLLOW_UP_BOTH,
+  FOLLOW_UP_HALF,
+  FOLLOW_UP_TEXT,
+  INCIDENTS,
+  SCENES,
+  settingFor,
+  type Desk,
+  type Effect,
+  type Scene,
+} from "./journey-content";
 
 export const MAX_STOPS = 10;
 export const MIN_STOPS = 3;
+/** Up to this many stops ask a second, follow-up card (when enough cards came back). */
+export const MAX_FOLLOW_UPS = 3;
+/** Cards to ask the Worker for: one per stop plus the follow-ups. */
+export const CARDS_WANTED = MAX_STOPS + MAX_FOLLOW_UPS;
 export const MAX_STAMINA = 5;
 export const MAX_TRUST = 6;
 export const START = { funds: 6, stamina: 4, trust: 3, contacts: 1 };
@@ -38,8 +54,15 @@ export interface Ending {
   onRoute: boolean;
 }
 
+/** One stop: its scene and the card(s) it asks (indices into `cards`). */
+export interface StopPlan {
+  scene: string;
+  cards: number[];
+}
+
 export interface JourneyState {
-  v: 1;
+  v: 2;
+  desk: Desk;
   code: string;
   sectionId: string;
   topicId: string;
@@ -50,7 +73,11 @@ export interface JourneyState {
   deadline: number;
   res: Resources;
   cards: McqQuestion[];
-  sceneIds: string[];
+  plan: StopPlan[];
+  /** Which card of the current stop is being asked (0, or 1 for a follow-up). */
+  step: number;
+  /** Scenes seen on this desk, including this run's, so the next run picks fresh ones. */
+  seenScenes: string[];
   phase: Phase;
   /** The two wrong options a contact has ruled out on the current card, if used. */
   ruledOut: number[] | null;
@@ -81,18 +108,48 @@ export function deadlineFor(stops: number): number {
   return (stops - 1) * 2 + 3;
 }
 
+/** Scenes this desk can use, apart from the final one. */
+export function scenePool(desk: Desk): Scene[] {
+  return SCENES.filter((sc) => !sc.desks || sc.desks.includes(desk));
+}
+
+/**
+ * Pick n scene ids, preferring ones not seen yet. When the unseen ones run out, a new cycle
+ * starts: the returned `seen` list then holds only the new cycle's picks.
+ */
+export function pickScenes(pool: string[], n: number, seen: string[], rand: Rand = Math.random): { ids: string[]; seen: string[] } {
+  const seenSet = new Set(seen);
+  const unseen = shuffled(pool.filter((id) => !seenSet.has(id)), rand);
+  if (unseen.length >= n) {
+    const ids = unseen.slice(0, n);
+    return { ids, seen: [...seen.filter((id) => pool.includes(id)), ...ids] };
+  }
+  const refill = shuffled(pool.filter((id) => seenSet.has(id)), rand).slice(0, n - unseen.length);
+  return { ids: shuffled([...unseen, ...refill], rand), seen: refill };
+}
+
 export function newJourney(
-  o: { code: string; sectionId: string; topicId: string; topicTitle: string; cards: McqQuestion[] },
+  o: { code: string; sectionId: string; topicId: string; topicTitle: string; cards: McqQuestion[]; seen?: string[] },
   rand: Rand = Math.random,
 ): JourneyState {
-  const setting = SETTINGS[o.sectionId] ?? DEFAULT_SETTING;
+  const desk = deskFor(o.code);
+  const setting = settingFor(o.code, o.sectionId);
   const n = Math.min(MAX_STOPS, o.cards.length, setting.route.length);
   if (n < MIN_STOPS) throw new Error("Not enough cards for a journey.");
   // Keep the destination: a short run starts further along the route.
   const stops = setting.route.slice(setting.route.length - n);
-  const scenes = shuffled(SCENES, rand).slice(0, n - 1).map((s) => s.id);
+  const picked = pickScenes(scenePool(desk).map((sc) => sc.id), n - 1, o.seen ?? [], rand);
+  // Spare cards become follow-ups at a few stops in the middle (never the first or last).
+  const middle = shuffled(Array.from({ length: Math.max(0, n - 2) }, (_, i) => i + 1), rand);
+  const doubles = new Set(middle.slice(0, Math.min(MAX_FOLLOW_UPS, o.cards.length - n)));
+  let next = 0;
+  const plan: StopPlan[] = [...picked.ids, FINAL_SCENE.id].map((scene, i) => ({
+    scene,
+    cards: doubles.has(i) ? [next++, next++] : [next++],
+  }));
   return {
-    v: 1,
+    v: 2,
+    desk,
     code: o.code,
     sectionId: o.sectionId,
     topicId: o.topicId,
@@ -102,8 +159,10 @@ export function newJourney(
     stop: 0,
     deadline: deadlineFor(n),
     res: { ...START, day: 0 },
-    cards: o.cards.slice(0, n),
-    sceneIds: [...scenes, FINAL_SCENE.id],
+    cards: o.cards.slice(0, next),
+    plan,
+    step: 0,
+    seenScenes: picked.seen,
     phase: "scene",
     ruledOut: null,
     message: "",
@@ -121,16 +180,26 @@ export function isFinalStop(s: JourneyState): boolean {
 }
 
 export function currentScene(s: JourneyState): Scene {
-  const id = s.sceneIds[s.stop];
+  const id = s.plan[s.stop].scene;
   return (id === FINAL_SCENE.id ? FINAL_SCENE : SCENES.find((x) => x.id === id)) ?? SCENES[0];
 }
 
 export function sceneText(s: JourneyState): string {
-  return currentScene(s).text.replace("{place}", s.stops[s.stop]);
+  return s.step > 0 ? FOLLOW_UP_TEXT : currentScene(s).text.replace("{place}", s.stops[s.stop]);
 }
 
 export function currentCard(s: JourneyState): McqQuestion {
-  return s.cards[s.stop];
+  return s.cards[s.plan[s.stop].cards[s.step]];
+}
+
+/** True when the card just answered (or being asked) is the last one at this stop. */
+export function isLastCardAtStop(s: JourneyState): boolean {
+  return s.step >= s.plan[s.stop].cards.length - 1;
+}
+
+/** True when the current stop asks two cards. */
+export function isTwoPart(s: JourneyState): boolean {
+  return s.plan[s.stop].cards.length > 1;
 }
 
 /** Apply an effect within limits; returns what actually changed. */
@@ -172,10 +241,27 @@ export function answerCard(s: JourneyState, chosen: number): JourneyState {
   } else {
     next.streak = 0;
   }
-  const outcome = correct ? scene.right : scene.wrong;
-  next.delta = apply(next.res, outcome.effect);
-  next.message = outcome.text;
   next.phase = "outcome";
+  if (!isLastCardAtStop(next)) {
+    // First half of a two-part stop: just the verdict, then the follow-up.
+    next.message = "";
+    next.delta = {};
+    return next;
+  }
+  // The stop's outcome depends on all its cards.
+  const asked = next.plan[next.stop].cards.length;
+  const got = next.answers.slice(-asked).filter((a) => a.correct).length;
+  if (asked > 1 && got === asked) {
+    next.delta = apply(next.res, { ...scene.right.effect, trust: (scene.right.effect.trust ?? 0) + 1 });
+    next.message = `${FOLLOW_UP_BOTH} ${scene.right.text}`;
+  } else if (got > 0 && got < asked) {
+    next.delta = {};
+    next.message = FOLLOW_UP_HALF;
+  } else {
+    const outcome = got ? scene.right : scene.wrong;
+    next.delta = apply(next.res, outcome.effect);
+    next.message = outcome.text;
+  }
   return checkFailure(next);
 }
 
@@ -188,6 +274,7 @@ function checkFailure(s: JourneyState): JourneyState {
 /** After reading the outcome: the final stop ends the run, otherwise make camp. */
 export function continueFromOutcome(s: JourneyState): JourneyState {
   if (s.phase !== "outcome") return s;
+  if (!isLastCardAtStop(s)) return { ...s, step: s.step + 1, ruledOut: null, phase: "scene", message: "", delta: {} };
   if (isFinalStop(s)) return end(s, null);
   return { ...s, phase: "camp", message: "", delta: {} };
 }
@@ -258,6 +345,7 @@ export function chooseTravel(s: JourneyState, id: string, rand: Rand = Math.rand
   const next: JourneyState = structuredClone(s);
   const delta = apply(next.res, m.effect);
   next.stop += 1;
+  next.step = 0;
   next.ruledOut = null;
   if (rand() < m.incidentChance) {
     const inc = INCIDENTS[Math.floor(rand() * INCIDENTS.length)];
@@ -320,14 +408,24 @@ export function finalScore(s: JourneyState): number {
   return cards + r.trust * 40 + r.stamina * 20 + Math.max(0, daysLeft(s)) * 10 + r.funds * 5 + r.contacts * 15;
 }
 
-/** A saved run from storage, if it's one we can still use. */
+/** A saved run from storage, if it's one we can still use. Version 1 saves (one card per stop) are upgraded. */
 export function parseSave(raw: string | null): JourneyState | null {
   if (!raw) return null;
   try {
-    const s = JSON.parse(raw) as JourneyState;
-    if (s?.v !== 1 || s.phase === "ended" || !Array.isArray(s.cards) || !Array.isArray(s.stops)) return null;
-    if (s.cards.length !== s.stops.length || s.stop < 0 || s.stop >= s.stops.length) return null;
-    return s;
+    const s = JSON.parse(raw) as Omit<JourneyState, "v"> & { v: number; sceneIds?: string[] };
+    if (s?.v === 1 && Array.isArray(s.sceneIds)) {
+      s.plan = s.sceneIds.map((scene, i) => ({ scene, cards: [i] }));
+      s.step = 0;
+      s.desk = deskFor(s.code);
+      s.seenScenes = [];
+      s.v = 2;
+      delete s.sceneIds;
+    }
+    if (s?.v !== 2 || s.phase === "ended" || !Array.isArray(s.cards) || !Array.isArray(s.stops) || !Array.isArray(s.plan)) return null;
+    if (s.plan.length !== s.stops.length || s.stop < 0 || s.stop >= s.stops.length) return null;
+    if (s.plan.some((p) => !Array.isArray(p.cards) || p.cards.some((i) => !s.cards[i]))) return null;
+    if (s.step < 0 || s.step >= s.plan[s.stop].cards.length) return null;
+    return s as JourneyState;
   } catch {
     return null;
   }

@@ -149,7 +149,7 @@ async function showList() {
     if (!data.sessions.length) panel.append(el("p", { class: "meta" }, "No sessions yet."));
     for (const s of data.sessions) {
       const card = el("div", { class: "card", tabindex: "0", role: "button" },
-        el("strong", {}, `${s.subject ?? ""} — ${s.topic ?? ""}`),
+        el("strong", {}, `${s.subject ?? ""} — ${s.topic ?? ""}`, s.key.startsWith("log:tester:") ? el("span", { class: "tester-badge" }, "Tester") : null),
         el("div", { class: "meta" }, `${fmt(s.updatedAt)} · ${s.mode ?? ""} · ${s.count ?? 0} messages`),
         s.flagged ? el("div", { class: "flag" }, "⚠ Flagged") : null,
       );

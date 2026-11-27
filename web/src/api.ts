@@ -41,13 +41,19 @@ async function errorFrom(res: Response): Promise<ApiError> {
 }
 
 export async function login(path: "/api/login" | "/api/parent/login", body: object): Promise<string> {
+  return (await loginAs(path, body)).token;
+}
+
+/** Log in and learn which student user it was ("student", or "tester" for a parent testing the app). */
+export async function loginAs(path: "/api/login" | "/api/parent/login", body: object): Promise<{ token: string; user: string }> {
   const res = await fetch(WORKER_URL + path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw await errorFrom(res);
-  return ((await res.json()) as { token: string }).token;
+  const data = (await res.json()) as { token: string; user?: string };
+  return { token: data.token, user: data.user ?? "student" };
 }
 
 export async function getJson<T>(path: string, token: string): Promise<T> {

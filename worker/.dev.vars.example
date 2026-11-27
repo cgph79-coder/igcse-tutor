@@ -3,6 +3,8 @@ LLM_API_KEY=sk-your-key-here
 TUTOR_PASSCODE=choose-a-passcode-for-your-son
 PARENT_PASSWORD=choose-a-different-password-for-you
 TOKEN_SECRET=a-long-random-string-at-least-32-characters
+# Optional: a passcode for a parent to test the app as a separate user ("tester")
+TESTER_PASSCODE=
 # Optional: comma-separated names/words to always remove before sending to the LLM
 # (e.g. his first name, surname, school name). Keep this a secret too.
 BLOCKED_TERMS=

@@ -196,6 +196,10 @@ Note: on iPhone the installed app has its own storage, so he logs in again and p
 
 **Done when:** a student can request a subject in under 30 seconds and see its status; a parent sees all requests in one place; and adding an approved subject follows the checklist above, ending in a validated syllabus file and a reviewed quality sample.
 
+## Tester login (built, Nov 2026)
+
+An optional `TESTER_PASSCODE` Worker secret logs in as a separate student user, "tester". All Worker data is keyed by user, so the tester gets their own career, limits, Editor's desk runs and logs. The Editor's desk opens on every topic for the tester. The parent view shows only the student's career, focus time and usage, and labels tester sessions. The app shows a Tester badge, and switching user on a device clears that device's career copy. With real accounts (see `COMMERCIALISATION.md`) this becomes a normal second user.
+
 ## Model choices
 
 - **Photo/PDF marking:** staying on **Claude Sonnet 5.5** (via OpenRouter) for reliability. It costs about 5–10p per multi-page marking. If cost needs optimising, try `anthropic/claude-haiku-5.5` (around 20× cheaper) by changing `LLM_VISION_MODEL` in `worker/wrangler.toml`, then compare marking quality in the parent logs for a week.

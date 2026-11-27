@@ -18,6 +18,7 @@ import {
 import { EXAM_DATE } from "./config";
 import { deskFor } from "./games/journey-content";
 import { el } from "./ui";
+import { prefs } from "./storage";
 import { hasExamDraft } from "./exam-view";
 
 const DESK_NAMES = { history: "History desk", science: "Science desk", tech: "Tech desk", data: "Data desk" } as const;
@@ -72,6 +73,8 @@ export function renderCareerMap(
     )];
   });
 
+  // A parent testing the app gets the Editor's desk on every topic (the Worker allows it for the tester login).
+  const tester = prefs.get("user") === "tester";
   const cov = coverage(c, EXAM_DATE);
   const desks = SYLLABUSES.map((s) => {
     const sc = cov.find((x) => x.code === s.code)!;
@@ -82,7 +85,7 @@ export function renderCareerMap(
           const g = gradeOf(c, s.code, t.id);
           const exam = c.topics[`${s.code}:${t.id}`]?.exam;
           let editor: HTMLElement | null = null;
-          if (examUnlocked(c, s.code, t.id)) {
+          if (examUnlocked(c, s.code, t.id) || tester) {
             editor = el("button", { type: "button", class: "icon-btn editor-btn" }, hasExamDraft(s.code, t.id) ? "✍ Continue" : "✍ Editor");
             editor.addEventListener("click", () => o.onEditor(s.code, t.id));
           }
